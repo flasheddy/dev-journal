@@ -1,0 +1,14 @@
+{% extends "tags.html" %}
+
+{% block taxonomy_content %}
+  <ul class="taxonomy-grid">
+    {% for term in terms %}
+      <li>
+        <a href="{{ term.permalink }}">
+          <span>{{ term.name }}</span>
+          <span>{{ term.pages | length }} {% if term.pages | length == 1 %}article{% else %}articles{% endif %}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock taxonomy_content %}

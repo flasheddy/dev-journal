@@ -1,0 +1,22 @@
+base_url = "https://hech.dev"
+title = "Dev Journal"
+description = "Notes about extraction infrastructure, adversarial data pipelines, and local-first software with Rust and Python"
+default_language = "en"
+compile_sass = false
+build_search_index = false
+generate_feeds = false
+minify_html = true
+taxonomies = [{ name = "tags", feed = false }]
+
+[markdown]
+smart_punctuation = true
+external_links_target_blank = true
+external_links_no_follow = false
+external_links_no_referrer = true
+
+[markdown.highlighting]
+style = "inline"
+theme = "catppuccin-mocha"
+
+[extra]
+github_url = "https://github.com/flasheddy"

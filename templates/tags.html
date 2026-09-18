@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{% block taxonomy_title %}Tags{% endblock taxonomy_title %} · {{ config.title }}{% endblock title %}
+
+{% block content %}
+  <section class="archive shell">
+    <header class="page-heading">
+      <p class="page-heading__context">Browse by topic</p>
+      <h1>{% block taxonomy_heading %}Tags{% endblock taxonomy_heading %}</h1>
+      {% block taxonomy_description %}<p>Topics collected across the journal.</p>{% endblock taxonomy_description %}
+    </header>
+    {% block taxonomy_content %}{% endblock taxonomy_content %}
+  </section>
+{% endblock content %}

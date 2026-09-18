@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} · {{ config.title }}{% endblock title %}
+{% block description %}{{ page.description | default(value=config.description) }}{% endblock description %}
+
+{% block content %}
+  <article class="article">
+    <header class="article-header reading-column">
+      <a class="back-link" href="{{ get_url(path='@/blog/_index.md') }}">← Back to Articles</a>
+      <h1>{{ page.title }}</h1>
+      <div class="article-meta">
+        <time datetime="{{ page.date }}">{{ page.date | date(format="%B %d, %Y") }}</time>
+        <span aria-hidden="true">·</span>
+        <span>{{ page.reading_time }} min read</span>
+      </div>
+      {{<tag_list tags={page.taxonomies.tags | default(value=[])} />}}
+    </header>
+    <div class="prose reading-column">
+      {{ page.content | safe }}
+    </div>
+    <footer class="article-footer reading-column">
+      <a class="back-link" href="{{ get_url(path='@/blog/_index.md') }}">← Back to Articles</a>
+    </footer>
+  </article>
+{% endblock content %}

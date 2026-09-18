@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="intro shell" aria-labelledby="intro-title">
+    <p class="intro__mark" aria-hidden="true">~/</p>
+    <div>
+      <h1 id="intro-title">Hi, I’m Chen.</h1>
+      <p>I write about extraction infrastructure, adversarial data pipelines, and local-first software with Rust and Python.</p>
+    </div>
+  </section>
+
+  <!-- <section class="project-band" id="ensub" aria-labelledby="project-title"> -->
+    <!-- <div class="shell"> -->
+      <!-- <div class="section-heading"> -->
+        <!-- <h2 id="project-title">Current project</h2> -->
+        <!-- <span class="section-rule" aria-hidden="true"></span> -->
+      <!-- </div> -->
+      <!-- <article class="project-card"> -->
+        <!-- <div class="project-card__content"> -->
+          <!-- <div> -->
+            <!-- <h3>Ensub</h3> -->
+            <!-- <p>A local-first English immersion and spaced-repetition suite that turns words from real reading into contextual vocabulary practice.</p> -->
+          <!-- </div> -->
+          <!-- <ul class="tech-list" aria-label="Ensub technologies"> -->
+            <!-- <li>Rust</li><li>SQLite</li><li>SM-2</li> -->
+          <!-- </ul> -->
+        <!-- </div> -->
+        <!-- <a class="project-link external-link" href="https://github.com/flasheddy/ensub" target="_blank" rel="noopener noreferrer"> -->
+          <!-- View project <span aria-hidden="true">↗</span> -->
+        <!-- </a> -->
+      <!-- </article> -->
+    <!-- </div> -->
+  <!-- </section> -->
+
+  <section class="article-feed shell" aria-labelledby="articles-title">
+    <div class="section-heading">
+      <h2 id="articles-title">Latest articles</h2>
+      <a href="{{ get_url(path='@/blog/_index.md') }}">View all</a>
+    </div>
+    {% set blog = get_section(path="blog/_index.md") %}
+    <div class="post-list">
+      {% for post in blog.pages %}
+        {{<post_item post={post} />}}
+      {% else %}
+        <p class="empty-state">No articles yet. The first field note is on its way.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock content %}

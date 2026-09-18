@@ -1,0 +1,22 @@
+{% component tag_list(tags) %}
+  {% if tags %}
+    <ul class="tag-list" aria-label="Tags">
+      {% for tag in tags %}
+        <li><a class="tag" href="{{ get_taxonomy_url(kind='tags', term=tag) }}">{{ tag }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endcomponent tag_list %}
+
+{% component post_item(post) %}
+  <article class="post-item">
+    <div class="post-item__date">
+      <time datetime="{{ post.date }}">{{ post.date | date(format="%b %d, %Y") }}</time>
+    </div>
+    <div class="post-item__body">
+      <h3><a href="{{ post.permalink }}">{{ post.title }}</a></h3>
+      {% if post.description %}<p>{{ post.description }}</p>{% endif %}
+      {{<tag_list tags={post.taxonomies.tags | default(value=[])} />}}
+    </div>
+  </article>
+{% endcomponent post_item %}

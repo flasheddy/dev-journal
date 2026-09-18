@@ -1,0 +1,13 @@
+{% extends "tags.html" %}
+
+{% block taxonomy_title %}{{ term.name }}{% endblock taxonomy_title %}
+{% block taxonomy_heading %}{{ term.name }}{% endblock taxonomy_heading %}
+{% block taxonomy_description %}<p>{{ term.pages | length }} {% if term.pages | length == 1 %}article{% else %}articles{% endif %} tagged “{{ term.name }}”.</p>{% endblock taxonomy_description %}
+
+{% block taxonomy_content %}
+  <div class="post-list">
+    {% for post in term.pages %}
+      {{<post_item post={post} />}}
+    {% endfor %}
+  </div>
+{% endblock taxonomy_content %}

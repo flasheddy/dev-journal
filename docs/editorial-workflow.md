@@ -117,12 +117,10 @@ zola build
 ./verify.fish
 git diff --check
 # Replace <path-to-new-file> with each newly created, still-untracked file.
-new_file="<path-to-new-file>"
-set +e
-check_output="$(git diff --no-index --check /dev/null "$new_file" 2>&1)"
-check_status=$?
-set -e
-test "$check_status" -eq 1 && test -z "$check_output"
+set new_file "<path-to-new-file>"
+set check_output (git diff --no-index --check /dev/null $new_file 2>&1)
+set check_status $status
+test $check_status -eq 1; and test (count $check_output) -eq 0
 git status --short --branch
 ```
 

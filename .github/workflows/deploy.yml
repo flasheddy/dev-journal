@@ -26,6 +26,10 @@ jobs:
           tool: zola
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      - name: Install fish
+        run: sudo apt-get update && sudo apt-get install -y fish
+      - name: Verify site contract
+        run: ./verify.fish
       - name: Build site
         run: zola build
       - name: Upload Pages artifact

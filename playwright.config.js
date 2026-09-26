@@ -27,6 +27,13 @@ module.exports = defineConfig({
         launchOptions: { executablePath: CHROMIUM_PATH },
       },
     },
+    {
+      name: 'system-chromium-mobile',
+      use: {
+        ...devices['Pixel 5'],
+        launchOptions: { executablePath: CHROMIUM_PATH },
+      },
+    },
   ],
   webServer: {
     command: `zola serve --interface 127.0.0.1 --port ${PORT}`,

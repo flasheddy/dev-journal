@@ -8,9 +8,15 @@ const CORE_PAGES = [
   { name: 'tag-rust', path: '/tags/rust/' },
 ];
 
+function viewportMode(page) {
+  const viewport = page.viewportSize();
+  return viewport && viewport.width <= 640 ? 'mobile' : 'desktop';
+}
+
 test.describe('core page rendering health', () => {
   for (const pageInfo of CORE_PAGES) {
     test(`${pageInfo.name} renders without errors or overflow`, async ({ page }) => {
+      const mode = viewportMode(page);
       const pageErrors = [];
       page.on('pageerror', (err) => pageErrors.push(String(err)));
 
@@ -27,7 +33,7 @@ test.describe('core page rendering health', () => {
       expect(overflowPx, 'no horizontal overflow').toBeLessThanOrEqual(1);
 
       await page.screenshot({
-        path: `.visual/screenshots/${pageInfo.name}.png`,
+        path: `.visual/screenshots/${mode}-${pageInfo.name}.png`,
         fullPage: true,
       });
 
@@ -50,8 +56,9 @@ test.describe('core page rendering health', () => {
     await expect(page.locator('[data-theme-icon="sun"]')).toBeVisible();
     await expect(page.locator('[data-theme-icon="moon"]')).toBeHidden();
 
+    const mode = viewportMode(page);
     await page.screenshot({
-      path: '.visual/screenshots/home-light.png',
+      path: `.visual/screenshots/${mode}-home-light.png`,
       fullPage: true,
     });
   });

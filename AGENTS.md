@@ -36,8 +36,9 @@ violated.
   theme toggle and code-block copy buttons (progressive enhancement,
   `navigator.clipboard` with textarea fallback). Keep it vanilla.
 - **Deployment:** Push to `main` triggers `.github/workflows/deploy.yml`:
-  checkout → install Zola → `actions/configure-pages@v5` →
-  `zola build` → `actions/upload-pages-artifact@v3` (`path: public`) →
+  checkout → install Zola → `actions/configure-pages@v5` → install `fish` +
+  `ripgrep` → `./verify.fish` → `zola build` →
+  `actions/upload-pages-artifact@v3` (`path: public`) →
   `actions/deploy-pages@v4`. Pages source must be "GitHub Actions". Custom
   domain via `static/CNAME` (`hech.dev`); `base_url = "https://hech.dev"`.
 - **Config invariants (`config.toml`):** keep `base_url`, the `tags` taxonomy
@@ -88,6 +89,24 @@ Key invariants enforced by `verify.fish` (do not break these):
   `upload-pages-artifact@v3`, `deploy-pages@v4`) while installing Zola
   unpinned (`tool: zola`); `README.md` targets system Zola with no hardcoded
   engine version.
+
+## Visual Verification Harness
+
+A decoupled Playwright runner (`verify-visual.fish`) checks rendering health
+and captures screenshots. It is deliberately separate from `verify.fish` and
+from the GitHub Pages deploy workflow:
+
+- **Package management:** Bun. The committed lockfile is `bun.lock`; never
+  generate or commit `package-lock.json`. Install deps with `bun install`.
+- **Browser:** system Chromium via `executablePath` (`/usr/bin/chromium`);
+  the harness never downloads a Playwright browser and must not call
+  `playwright install`.
+- **Strict decoupling:** `verify-visual.fish` must not be invoked by
+  `verify.fish` and must not be added to `.github/workflows/deploy.yml`; CI
+  stays fast and dependency-free.
+- **Artifacts:** screenshots go to `.visual/screenshots/` (gitignored); the
+  HTML report is `.visual/report/index.html`. `node_modules/`, `.visual/`,
+  `test-results/`, and `playwright-report/` are gitignored.
 
 ## Editorial & Content Invariants
 

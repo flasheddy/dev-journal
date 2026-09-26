@@ -99,7 +99,7 @@ Before calling an article `locally validated`, a reviewer checks:
   unapproved remote results;
 - the diff changes only the intended article or documentation and preserves
   existing templates, configuration, workflow, and tests;
-- the local build and site contract both pass.
+- the local build, site contract, and visual rendering checks all pass.
 
 Drafting and local validation are read-only editorial activities. Before
 writing a final article, committing, pushing, submitting, or publishing,
@@ -115,6 +115,7 @@ change:
 ```fish
 zola build
 ./verify.fish
+./verify-visual.fish
 git diff --check
 # Replace <path-to-new-file> with each newly created, still-untracked file.
 set new_file "<path-to-new-file>"
@@ -127,7 +128,11 @@ git status --short --branch
 `zola build` must complete successfully and produce the local `public/`
 export. `verify.fish` verifies required files, front matter and template
 contracts, asset URL portability, internal link integrity, and the decoupled
-(unpinned) Zola deployment references. Review the resulting diff and status output to confirm
+(unpinned) Zola deployment references. `./verify-visual.fish` runs the decoupled
+Playwright harness (Bun + system Chromium at `/usr/bin/chromium`; install once
+with `bun install`) and writes full-page screenshots to `.visual/screenshots/`;
+inspect them to confirm new content renders without overflow or console errors.
+Review the resulting diff and status output to confirm
 that no unrelated file changed. A local pass is evidence for
 `locally validated` only; remote challenge or deployment checks require an
 authorized remote operation and should be recorded separately. The regular

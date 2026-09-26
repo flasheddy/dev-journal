@@ -22,6 +22,23 @@ The generated site is written to `public/`. Run the repository contract check wi
 ./verify.fish
 ```
 
+## Visual verification
+
+A separate Playwright runner checks rendering and captures screenshots. It is
+decoupled from `./verify.fish` and from the GitHub Pages deploy workflow, and it
+requires Bun and system Chromium (`/usr/bin/chromium`). Install the one-time
+dependency and run it with:
+
+```fish
+bun install
+./verify-visual.fish
+```
+
+The harness starts a local Zola preview automatically. Full-page screenshots are
+written to `.visual/screenshots/` (`home.png`, `blog.png`, `article.png`,
+`tags.png`, `tag-rust.png`, and the light-theme `home-light.png`); the HTML
+report is `.visual/report/index.html`.
+
 ## Writing an article
 
 Add Markdown files under `content/blog/` using this front matter:

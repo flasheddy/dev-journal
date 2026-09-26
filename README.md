@@ -34,10 +34,12 @@ bun install
 ./verify-visual.fish
 ```
 
-The harness starts a local Zola preview automatically. Full-page screenshots are
-written to `.visual/screenshots/` (`home.png`, `blog.png`, `article.png`,
-`tags.png`, `tag-rust.png`, and the light-theme `home-light.png`); the HTML
-report is `.visual/report/index.html`.
+The harness starts a local Zola preview automatically and runs the same checks in
+two viewports. Each full-page screenshot is prefixed by mode and written to
+`.visual/screenshots/`: `desktop-*.png` and `mobile-*.png` for the five core pages
+(`home`, `blog`, `article`, `tags`, `tag-playwright`), plus the light-theme
+`desktop-home-light.png` and `mobile-home-light.png`. The HTML report is
+`.visual/report/index.html`.
 
 ## Writing an article
 
@@ -46,10 +48,10 @@ Add Markdown files under `content/blog/` using this front matter:
 ```toml
 +++
 title = "Post title"
-date = 2026-08-17
+date = 2026-09-26
 description = "A short summary used by article lists and metadata."
 [taxonomies]
-tags = ["Rust", "Zola"]
+tags = ["Playwright", "Bun", "CSS", "Zola"]
 +++
 ```
 

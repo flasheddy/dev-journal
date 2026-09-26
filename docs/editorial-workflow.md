@@ -73,10 +73,10 @@ metadata.
 ```toml
 +++
 title = "Post title"
-date = 2026-08-17
+date = 2026-09-26
 description = "A short summary used by article lists and metadata."
 [taxonomies]
-tags = ["Rust", "Zola"]
+tags = ["Playwright", "Bun", "CSS", "Zola"]
 +++
 ```
 

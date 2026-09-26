@@ -124,10 +124,10 @@ from the GitHub Pages deploy workflow:
   ```toml
   +++
   title = "Post title"
-  date = 2026-08-17          # ISO year-month-day
+  date = 2026-09-26          # ISO year-month-day
   description = "Short summary for lists and metadata."
   [taxonomies]
-  tags = ["Rust", "Zola"]
+  tags = ["Playwright", "Bun", "CSS", "Zola"]
   +++
   ```
 

@@ -222,6 +222,19 @@ img {
   transform: translateY(-1px);
 }
 
+/* Theme toggle icon state: Moon in Mocha (dark), Sun in Latte (light). */
+.theme-toggle [data-theme-icon="sun"] {
+  display: none;
+}
+
+html[data-theme="latte"] .theme-toggle [data-theme-icon="sun"] {
+  display: block;
+}
+
+html[data-theme="latte"] .theme-toggle [data-theme-icon="moon"] {
+  display: none;
+}
+
 .intro {
   display: grid;
   grid-template-columns: 3.25rem minmax(0, 46rem);

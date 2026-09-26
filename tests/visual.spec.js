@@ -35,14 +35,20 @@ test.describe('core page rendering health', () => {
     });
   }
 
-  test('theme toggle switches mocha <-> latte and captures light screenshot', async ({ page }) => {
+  test('theme toggle swaps moon/sun icon with theme state', async ({ page }) => {
     await page.goto('/');
 
-    const initial = await page.evaluate(() => document.documentElement.dataset.theme);
+    // Fresh context defaults to Mocha (dark): Moon visible, Sun hidden.
+    await expect(page.locator('[data-theme-icon="moon"]')).toBeVisible();
+    await expect(page.locator('[data-theme-icon="sun"]')).toBeHidden();
+
     await page.locator('[data-theme-toggle]').click();
-    const toggled = await page.evaluate(() => document.documentElement.dataset.theme);
-    expect(toggled).not.toBe(initial);
-    expect(['mocha', 'latte']).toContain(toggled);
+    const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+    expect(theme).toBe('latte');
+
+    // Latte (light): Sun visible, Moon hidden.
+    await expect(page.locator('[data-theme-icon="sun"]')).toBeVisible();
+    await expect(page.locator('[data-theme-icon="moon"]')).toBeHidden();
 
     await page.screenshot({
       path: '.visual/screenshots/home-light.png',

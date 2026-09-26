@@ -15,8 +15,6 @@
     const isLatte = currentTheme() === 'latte';
     toggle.setAttribute('aria-label', isLatte ? 'Switch to dark theme' : 'Switch to light theme');
     toggle.setAttribute('aria-pressed', String(isLatte));
-    toggle.querySelector('[data-theme-icon="light"]').hidden = isLatte;
-    toggle.querySelector('[data-theme-icon="dark"]').hidden = !isLatte;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isLatte ? '#eff1f5' : '#1e1e2e');
   }
 

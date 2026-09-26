@@ -24,7 +24,7 @@ set -l required_files
 set -a required_files config.toml
 set -a required_files content/_index.md
 set -a required_files content/blog/_index.md
-set -a required_files content/blog/building-ensub.md
+set -a required_files content/blog/offline-visual-verification.md
 set -a required_files templates/base.html
 set -a required_files templates/index.html
 set -a required_files templates/page.html
@@ -56,8 +56,8 @@ end
 # 3. Content invariants.
 assert_contains content/blog/_index.md 'sort_by = "date"'
 assert_contains content/blog/_index.md 'page_template = "page.html"'
-assert_contains content/blog/building-ensub.md 'title = "Building Ensub: Local-First Vocabulary Practice"'
-assert_contains content/blog/building-ensub.md 'tags = ["Rust", "SQLite", "SM-2"]'
+assert_contains content/blog/offline-visual-verification.md 'title = "Offline-First Visual Verification: A Decoupled Playwright Harness"'
+assert_contains content/blog/offline-visual-verification.md 'tags = ["Playwright", "Bun", "CSS", "Zola"]'
 
 # 4. Template invariants (Zola 0.23+ component syntax; no legacy macro/import).
 assert_contains templates/base.html 'get_url(path="css/site.css")'

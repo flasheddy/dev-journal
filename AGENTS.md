@@ -112,9 +112,9 @@ from the GitHub Pages deploy workflow:
 
 - **Do not alter, rename, retag, or displace existing articles or core
   portfolio sections without explicit user direction.** In particular:
-  - `content/blog/building-ensub.md` — its exact title
-    ("Building Ensub: Local-First Vocabulary Practice") and tags
-    (`["Rust", "SQLite", "SM-2"]`) are contract-pinned.
+  - `content/blog/offline-visual-verification.md` — its exact title
+    ("Offline-First Visual Verification: A Decoupled Playwright Harness") and tags
+    (`["Playwright", "Bun", "CSS", "Zola"]`) are contract-pinned.
   - The homepage (`templates/index.html`) structure: intro ("Hi, I'm Chen.")
     and the **Latest articles** feed. The **Current project** band is
     intentionally left commented out so the journal can spotlight a future

@@ -3,9 +3,9 @@ const { test, expect } = require('@playwright/test');
 const CORE_PAGES = [
   { name: 'home', path: '/' },
   { name: 'blog', path: '/blog/' },
-  { name: 'article', path: '/blog/building-ensub/' },
+  { name: 'article', path: '/blog/offline-visual-verification/' },
   { name: 'tags', path: '/tags/' },
-  { name: 'tag-rust', path: '/tags/rust/' },
+  { name: 'tag-playwright', path: '/tags/playwright/' },
 ];
 
 function viewportMode(page) {

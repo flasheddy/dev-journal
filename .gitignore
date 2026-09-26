@@ -2,3 +2,9 @@
 .DS_Store
 *.swp
 *.swo
+
+# Visual verification harness (decoupled; see verify-visual.fish)
+node_modules/
+.visual/
+test-results/
+playwright-report/

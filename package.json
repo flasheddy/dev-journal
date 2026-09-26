@@ -1,0 +1,14 @@
+{
+  "name": "dev-journal-visual",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Decoupled Playwright visual verification harness for Dev Journal (system Chromium, Bun-managed).",
+  "scripts": {
+    "test:visual": "playwright test",
+    "test:visual:headed": "playwright test --headed",
+    "report": "playwright show-report .visual/report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

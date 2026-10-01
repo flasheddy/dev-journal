@@ -1,6 +1,6 @@
 # AGENTS.md
 
-<!-- floor-contract: sha256:ce8543b3b13b87454c480f71608ed42906580b1cb472c60a5529ddcdd99f929a -->
+<!-- floor-contract: sha256:58117a1a1d63016dfd8e0f87bb6971ec9b18eaab65f43610539728dc800d2c9c -->
 
 Guidance for AI agents working in this repository. Dev Journal is a personal
 engineering journal built with Zola and deployed to GitHub Pages. Follow these

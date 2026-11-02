@@ -135,6 +135,7 @@ from the GitHub Pages deploy workflow:
 
   The blog section (`content/blog/_index.md`) sorts by `date` and renders
   articles with `page.html`; tag index/detail pages are automatic.
+
 - **Writing standards:** follow `docs/editorial-workflow.md`. Claims must be
   evidence-bounded (observed command output, reviewed source, or a labeled
   hypothesis); never invent metrics, completion status, or remote

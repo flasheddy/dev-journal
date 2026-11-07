@@ -4,9 +4,13 @@ const CORE_PAGES = [
   { name: 'home', path: '/' },
   { name: 'blog', path: '/blog/' },
   { name: 'article', path: '/blog/offline-visual-verification/' },
+  { name: 'article-dual-harness', path: '/blog/dual-harness-engineering/' },
   { name: 'tags', path: '/tags/' },
   { name: 'tag-playwright', path: '/tags/playwright/' },
+  { name: 'tag-antigravity', path: '/tags/antigravity/' },
 ];
+
+const FEED_PAGES = new Set(['home', 'blog', 'tag-playwright', 'tag-antigravity']);
 
 function viewportMode(page) {
   const viewport = page.viewportSize();
@@ -31,6 +35,46 @@ test.describe('core page rendering health', () => {
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(overflowPx, 'no horizontal overflow').toBeLessThanOrEqual(1);
+
+      if (FEED_PAGES.has(pageInfo.name)) {
+        const items = page.locator('.post-item');
+        const itemCount = await items.count();
+        expect(itemCount).toBeGreaterThan(0);
+
+        const firstItem = items.first();
+        const heading = firstItem.locator('h3');
+        const meta = firstItem.locator('.post-item__meta');
+        const description = firstItem.locator('p');
+        const tags = firstItem.locator('.tag-list');
+
+        await expect(meta).toBeVisible();
+        await expect(meta).toHaveText(/^[A-Z][a-z]{2} [1-9]\d?, \d{4}$/);
+
+        const styles = await meta.evaluate((el) => {
+          const computed = getComputedStyle(el);
+          return {
+            textTransform: computed.textTransform,
+            fontFamily: computed.fontFamily,
+          };
+        });
+        expect(styles.textTransform).toBe('none');
+        expect(styles.fontFamily).not.toMatch(/mono|consolas|menlo/i);
+
+        const hBox = await heading.boundingBox();
+        const mBox = await meta.boundingBox();
+        expect(hBox.y).toBeLessThan(mBox.y);
+
+        let prevY = mBox.y;
+        if ((await description.count()) > 0) {
+          const dBox = await description.boundingBox();
+          expect(prevY).toBeLessThan(dBox.y);
+          prevY = dBox.y;
+        }
+        if ((await tags.count()) > 0) {
+          const tBox = await tags.boundingBox();
+          expect(prevY).toBeLessThan(tBox.y);
+        }
+      }
 
       await page.screenshot({
         path: `.visual/screenshots/${mode}-${pageInfo.name}.png`,

@@ -41,7 +41,7 @@ synthetic examples and redact credentials, personal data, and private logs.
    observable contract. Name the constraints that shaped the solution.
 2. **Set the conceptual boundary.** Explain which layer owns the behavior and
    which interfaces or storage adapters depend on it. Keep explanations tied
-   to the actual Python or systems model used by the project.
+   to the actual runtime or systems model used by the project.
 3. **Compare decisions.** Describe rejected alternatives and why they did not
    satisfy the stated constraints. Mark unsettled choices as exploratory or
    hypotheses.
@@ -50,35 +50,34 @@ synthetic examples and redact credentials, personal data, and private logs.
    paths, logs, or data.
 5. **Attach evidence.** Include the exact local command, the relevant result,
    and environment assumptions. Distinguish `locally passing`, `remotely
-   verified`, and `independently explained` evidence.
+verified`, and `independently explained` evidence.
 6. **State limitations and next work.** Leave unresolved questions open and
    identify the next experiment rather than implying completion.
-
-## Python wording
-
-When an article discusses `pygrep`, describe the behavior using Python's own
-runtime and standard-library concepts (for example, Unicode strings,
-iterators, generators, exceptions, and process exit codes). Do not import Rust
-ownership, borrowing, lifetime, enum, or pattern-matching assumptions into a
-Python explanation; label any cross-language analogy as an analogy and verify
-the Python behavior separately.
 
 ## Zola article format
 
 Create an article under `content/blog/` with the established TOML front
 matter. Dates use ISO year-month-day values; tags use the configured `tags`
 taxonomy. The `description` is the short summary used by article lists and
-metadata.
+metadata. An optional top-level `updated` date records a meaningful revision
+date alongside the required `date`.
 
 ```toml
 +++
 title = "Post title"
 date = 2026-09-26
+updated = 2026-11-07       # Optional ISO 8601 date (YYYY-MM-DD)
 description = "A short summary used by article lists and metadata."
 [taxonomies]
 tags = ["Playwright", "Bun", "CSS", "Zola"]
 +++
 ```
+
+The `updated` key is optional and must be top-level, never nested inside
+`[extra]` or `[taxonomies]`. When it is present and differs from `date`, the
+article page renders an `Updated <date>` entry between the publication date and
+the reading time; when it is absent or equal to `date`, no updated entry is
+shown. Feed cards continue to show only the publication date.
 
 The blog section orders articles by `date`, and the page template supplies the
 article date, reading time, and tag links. Use Zola URL helpers for internal
@@ -109,39 +108,24 @@ article is published or that a milestone is complete.
 
 ## Required validation
 
-Run these commands from the repository root for any article or site-document
-change:
+Run the repository's verification gates from the root before transitioning an
+article from `draft` to `locally validated`:
 
 ```fish
-zola build
-./verify.fish
-./verify-visual.fish
-git diff --check
-# Replace <path-to-new-file> with each newly created, still-untracked file.
-set new_file "<path-to-new-file>"
-set check_output (git diff --no-index --check /dev/null $new_file 2>&1)
-set check_status $status
-test $check_status -eq 1; and test (count $check_output) -eq 0
-git status --short --branch
+just check
+just visual
 ```
 
-`zola build` must complete successfully and produce the local `public/`
-export. `verify.fish` verifies required files, front matter and template
-contracts, asset URL portability, internal link integrity, and the decoupled
-(unpinned) Zola deployment references. `./verify-visual.fish` runs the decoupled
-Playwright harness (Bun + system Chromium at `/usr/bin/chromium`; install once
-with `bun install`) and writes full-page screenshots to `.visual/screenshots/`;
-inspect them to confirm new content renders without overflow or console errors.
-Review the resulting diff and status output to confirm
-that no unrelated file changed. A local pass is evidence for
-`locally validated` only; remote challenge or deployment checks require an
-authorized remote operation and should be recorded separately. The regular
-`git diff --check` covers tracked changes. For the untracked article or
-site-document path, replace `<path-to-new-file>` with the actual path and run
-the no-index check once per new file. `git diff --no-index --check /dev/null
-<path>` returns status `1` because the files differ; the `check_output`
-assertion above treats that expected status as success only when Git emits no
-whitespace diagnostics.
+- `just check` executes the canonical verification pipeline: agent hygiene
+  validation (`check-agents`), static checks and git diff whitespace (`lint`),
+  secret scanning (`secrets`), site export (`zola build`), template/style
+  invariants (`./verify.fish`), and internal link integrity (`zola check`).
+- `just visual` runs the decoupled Playwright harness (Bun + system Chromium at
+  `/usr/bin/chromium`; install dependencies once via `bun install`) and writes
+  full-page screenshots to `.visual/screenshots/`; inspect them to confirm new
+  content renders without overflow or console errors.
+- Review `git status --short --branch` to confirm that no unrelated files
+  changed.
 
 ## Editorial record
 

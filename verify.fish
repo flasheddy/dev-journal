@@ -62,17 +62,25 @@ assert_contains content/blog/offline-visual-verification.md 'tags = ["Playwright
 # 4. Template invariants (Zola 0.23+ component syntax; no legacy macro/import).
 assert_contains templates/base.html 'get_url(path="css/site.css")'
 assert_contains templates/base.html 'get_url(path="js/site.js")'
-assert_contains templates/base.html 'data-theme-toggle'
+assert_contains templates/base.html data-theme-toggle
 assert_contains templates/index.html 'https://github.com/flasheddy/ensub'
 assert_contains templates/index.html '{{<post_item post={post} />}}'
 assert_contains templates/page.html 'page.reading_time'
 assert_contains templates/page.html 'Back to Articles'
+assert_contains templates/page.html 'page.updated != page.date'
+assert_contains templates/page.html 'date(format="%B %e, %Y")'
 assert_contains templates/macros.html '{% component tag_list(tags) %}'
 assert_contains templates/macros.html '{% component post_item(post) %}'
 assert_contains templates/macros.html "get_taxonomy_url(kind='tags', term=tag)"
+assert_contains templates/macros.html 'class="post-item__meta"'
+assert_contains templates/macros.html 'date(format="%b %e, %Y")'
 
 if rg -n -- '\{% (import|macro) |macros::|self::' templates
     fail 'legacy Tera macro syntax found in templates'
+end
+
+if rg -n -- 'post-item__(date|body)' templates/macros.html static/css/site.css
+    fail 'legacy two-column post-item selector found'
 end
 
 # 5. Static asset invariants.
@@ -81,6 +89,7 @@ assert_contains static/css/site.css 'border: 1px solid #313244;'
 assert_contains static/css/site.css 'border-radius: 8px;'
 assert_contains static/css/site.css 'padding: 1.25rem 1.35rem;'
 assert_contains static/css/site.css 'padding: 1.1rem;'
+assert_contains static/css/site.css '.post-item__meta'
 assert_contains static/js/site.js "const storageKey = 'dev-journal-theme';"
 assert_contains static/js/site.js 'navigator.clipboard.writeText'
 

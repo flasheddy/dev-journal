@@ -396,22 +396,14 @@ html[data-theme="latte"] .theme-toggle [data-theme-icon="moon"] {
 
 .post-item {
   display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
   padding-block: 2rem;
   border-bottom: 1px solid var(--border);
 }
 
-.post-item__date {
-  padding-top: 0.2rem;
-  color: var(--subtext);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  text-transform: uppercase;
-}
-
 .post-item h3 {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 1.35rem;
   line-height: 1.3;
 }
@@ -425,9 +417,15 @@ html[data-theme="latte"] .theme-toggle [data-theme-icon="moon"] {
   color: var(--accent);
 }
 
-.post-item__body>p {
+.post-item__meta {
+  color: var(--subtext);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.post-item > p {
   max-width: 46rem;
-  margin: 0 0 1rem;
+  margin: 0.2rem 0 0.55rem;
   color: var(--subtext);
 }
 
@@ -841,11 +839,6 @@ html[data-theme="latte"] .theme-toggle [data-theme-icon="moon"] {
 
   .site-nav>a {
     font-size: 0.82rem;
-  }
-
-  .post-item {
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
   }
 
   .project-band {

@@ -1,0 +1,20 @@
+[default]
+locale = "en-us"
+extend-ignore-re = [
+  # sha256 / sha1 / git object hashes (floor-contract markers, commit revs)
+  "\\b[0-9a-f]{40,64}\\b",
+  # 6-character hex color codes
+  "\\b[0-9a-f]{6}\\b",
+]
+
+[default.extend-words]
+cachyos = "cachyos"
+chezmoi = "chezmoi"
+dotool = "dotool"
+ensub = "ensub"
+ggml = "ggml"
+keyd = "keyd"
+paru = "paru"
+polkit = "polkit"
+taplo = "taplo"
+znver4 = "znver4"

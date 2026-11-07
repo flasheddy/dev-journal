@@ -13,7 +13,7 @@ that is managed end to end by chezmoi: the source tree is the single source of
 truth, and `chezmoi apply` reconciles the live system to it.
 
 The interesting part is not *that* dotfiles are version-controlled. It is how
-the layering is drawn — which artefacts belong to the operating system, which
+the layering is drawn — which artifacts belong to the operating system, which
 belong to the distro package manager, and which belong to standalone upstream
 toolchains — and why those boundaries are worth defending.
 
@@ -33,7 +33,7 @@ configuration layered on top and tracked in the same source tree.
 ## Why toolchains stay out of the package manager
 
 Language toolchains are the classic source of version pain. A distro package
-manager is optimised for system software with a slow, stable cadence; a Rust or
+manager is optimized for system software with a slow, stable cadence; a Rust or
 Python toolchain updates weekly and is often several releases ahead of what a
 distro ships.
 
@@ -96,8 +96,8 @@ and service enablements. Everything else lives in user space.
 
 The keyboard example is instructive. Caps Lock is overloaded — tap sends `Esc`,
 hold acts as `Ctrl` — declared as a few lines of config rather than a graph
-tweak. That is the whole point of the repository: even low-level input behaviour
-is a reviewable, reproducible artefact.
+tweak. That is the whole point of the repository: even low-level input behavior
+is a reviewable, reproducible artifact.
 
 ## Anatomy of the source tree
 

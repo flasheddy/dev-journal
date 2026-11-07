@@ -9,7 +9,11 @@
       <a class="back-link" href="{{ get_url(path='@/blog/_index.md') }}">← Back to Articles</a>
       <h1>{{ page.title }}</h1>
       <div class="article-meta">
-        <time datetime="{{ page.date }}">{{ page.date | date(format="%B %d, %Y") }}</time>
+        <time datetime="{{ page.date }}">{{ page.date | date(format="%B %e, %Y") }}</time>
+        {% if page.updated and page.updated != page.date %}
+          <span aria-hidden="true">·</span>
+          <span>Updated <time datetime="{{ page.updated }}">{{ page.updated | date(format="%B %e, %Y") }}</time></span>
+        {% endif %}
         <span aria-hidden="true">·</span>
         <span>{{ page.reading_time }} min read</span>
       </div>

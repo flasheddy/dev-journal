@@ -14,7 +14,7 @@ for c in bun chromium
 end
 
 if not test -f node_modules/.bin/playwright
-    printf 'FAIL: Playwright not installed. Run: bun add -d @playwright/test\n' >&2
+    printf 'FAIL: Playwright not installed. Run: bun install\n' >&2
     exit 1
 end
 

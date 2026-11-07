@@ -1,10 +1,11 @@
 +++
 title = "Agentic System Management: Running AI Agents Inside a Dotfiles Repository"
 date = 2026-10-18
+updated = 2026-11-07
 draft = false
 description = "What it takes to let AI agents maintain a real workstation: how context is loaded, which configuration surfaces are agent-visible, the prompt patterns that keep work safe, and why every mutation stays human-gated."
 [taxonomies]
-tags = ["AI Agents", "Goose", "Dotfiles", "Prompt Engineering"]
+tags = ["AI Agents", "Architecture", "Dotfiles", "Prompt Engineering"]
 +++
 
 The workstation behind this journal is maintained in part by AI agents working
@@ -15,6 +16,8 @@ environment is designed, not improvised.
 This is a description of the design — how context reaches an agent, which
 surfaces it can see, and the instruction patterns that keep its work bounded.
 
+_Note (November 2026): This post describes the foundational safety and context architecture. For the active division of labor across Antigravity CLI and OpenCode, see [Dual-Harness Engineering](@/blog/dual-harness-engineering.md)._
+
 ## Context is the real architecture
 
 An agent is only as good as the context it loads automatically. The design
@@ -24,8 +27,8 @@ treats three layers of context as first-class, each with a different reach:
   session auto-loads from the working directory upward. This is the binding
   contract for anything touching the repository.
 - **Global floor** — a workstation-wide safety document that is inlined into
-  every session by the agent runtime's hints mechanism, so no repository can
-  forget it.
+  every session by workstation-level agent instructions (~/.AGENTS.md), so no
+  repository can forget it.
 - **A home-path symlink** — a symlink at the home directory pointing at the
   same global floor, for tools that read the home path directly rather than
   walking the working directory.
@@ -39,16 +42,16 @@ The agent's own configuration is itself managed declaratively, and it is worth
 being explicit about which surface controls what — and what reaches the agent
 versus what merely sits on disk.
 
-| Artefact | Controls | How it reaches the agent |
+| Artifact | Controls | How it reaches the agent |
 |---|---|---|
 | Runtime config | active model/provider, extension set, thinking effort, context limit | loaded by the agent runtime at startup |
 | Permission posture | which tools are pre-approved, gated, or blocked | loaded by the runtime; also rewritten by it at runtime |
 | Global hints | the workstation-wide safety floor, inlined | injected into the system prompt |
 | System-prompt template | base identity and hard shell/safety constraints | rendered as the session's system prompt |
-| Sub-agent definitions | role-specialised delegates (drafting, review, audit) | invoked on demand by name |
+| Sub-agent definitions | role-specialized delegates (drafting, review, audit) | invoked on demand by name |
 | Shell environment | the authoritative shell dialect for tool snippets | set at shell startup |
 
-Two lessons generalise from this table. First, **the runtime rewrites some of
+Two lessons generalize from this table. First, **the runtime rewrites some of
 its own config** — a permission file may be partially machine-managed — so the
 declarative source must tolerate a live file that differs from it and a
 verification gate that knows to ignore the runtime-managed parts. Second,
@@ -85,7 +88,7 @@ them installs a stranger's package set onto your system.
 
 The safe adoption path is a reconciliation, not an application:
 
-1. Fork and initialise **without applying**. The source tree is present; the
+1. Fork and initialize **without applying**. The source tree is present; the
    live system is untouched.
 2. Run a single reconciliation prompt: compare *your* installed packages,
    Flatpaks, and toolchains against the manifests, and report what to add or

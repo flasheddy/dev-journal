@@ -93,7 +93,7 @@ The four boundaries share a shape. Each answers one question mechanically:
 | If a component is compromised, what else does it reach? | isolated blast radius |
 | Where can root changes come from, and are they declared? | controlled privilege escalation |
 | Could a mistake leak something unrecoverable? | zero-secret baseline |
-| Who authorises a mutation, and what stops it? | human-gated mutation |
+| Who authorizes a mutation, and what stops it? | human-gated mutation |
 
 None of these is novel in isolation. The value is in stating them together and
 enforcing each with a mechanism — isolation, declarations, a zero baseline, and

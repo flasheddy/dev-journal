@@ -148,7 +148,7 @@ floor-stamp:
     printf '%s\n' $updated >$file
     echo "floor-stamp: refreshed $file -> "(string sub -l 12 $hex)
 
-# Auto-format supported files (Fish scripts, TOML configs, JS, tracked Markdown docs, justfile).
+# Auto-format supported files (Fish scripts, TOML configs, JS, CSS, tracked Markdown docs, justfile).
 fmt:
     #!/usr/bin/env fish
     if command -v fish_indent >/dev/null
@@ -168,15 +168,18 @@ fmt:
         for j in (git ls-files "*.js")
             test -f $j; and set -a targets $j
         end
-        for m in AGENTS.md README.md docs/editorial-workflow.md
+        for c in (git ls-files "*.css")
+            test -f $c; and set -a targets $c
+        end
+        for m in AGENTS.md README.md docs/editorial-workflow.md docs/specs/index.md
             test -f $m; and set -a targets $m
         end
         test -n "$targets"; and bun fmt $targets
     end
     just --fmt
-    echo "fmt: formatted fish scripts, toml, javascript, markdown documentation, and justfile"
+    echo "fmt: formatted fish scripts, toml, javascript, css, markdown documentation, and justfile"
 
-# Static and structural lint: fish syntax, TOML, js, typos, justfile format, whitespace.
+# Static and structural lint: fish syntax, TOML, js, css, typos, justfile format, whitespace.
 lint:
     #!/usr/bin/env fish
     set -l failed 0
@@ -220,6 +223,14 @@ lint:
             echo "FAIL: javascript files are not formatted; run 'just fmt'" >&2
             set failed 1
         end; end
+        set -l csss
+        for c in (git ls-files "*.css")
+            test -f $c; and set -a csss $c
+        end
+        test -n "$csss"; and begin bun fmt --check $csss >/dev/null 2>&1; or begin
+            echo "FAIL: css files are not formatted; run 'just fmt'" >&2
+            set failed 1
+        end; end
     end
     if command -v typos >/dev/null
         typos; or set failed 1
@@ -233,7 +244,7 @@ lint:
         echo "VERIFY FAILED: lint" >&2
         exit 1
     end
-    echo "lint: fish syntax, toml, js, typos, justfile format, whitespace"
+    echo "lint: fish syntax, toml, js, css, typos, justfile format, whitespace"
 
 # Secret scan (gitleaks, fail-closed rg fallback).
 secrets:

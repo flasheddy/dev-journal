@@ -74,10 +74,9 @@ tags = ["Playwright", "Bun", "CSS", "Zola"]
 ```
 
 The `updated` key is optional and must be top-level, never nested inside
-`[extra]` or `[taxonomies]`. When it is present and differs from `date`, the
-article page renders an `Updated <date>` entry between the publication date and
-the reading time; when it is absent or equal to `date`, no updated entry is
-shown. Feed cards continue to show only the publication date.
+`[extra]` or `[taxonomies]`. Its rendering behavior and edge cases are enforced
+by `verify.fish` and recorded in the feature spec index at
+[`docs/specs/`](specs/index.md).
 
 The blog section orders articles by `date`, and the page template supplies the
 article date, reading time, and tag links. Use Zola URL helpers for internal

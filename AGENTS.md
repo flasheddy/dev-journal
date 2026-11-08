@@ -104,10 +104,10 @@ All checks are codified in `justfile` and fail closed:
 - `just check-agents`: validates `AGENTS.md` against 7 hygiene rules (no
   tables, bun fmt idempotency, 32KB cap, single H1, no duplicate bullets >= 40
   chars, balanced fences, floor freshness).
-- `just fmt`: formats Fish scripts (`fish_indent`), TOML (`taplo`), JavaScript
-  and tracked Markdown docs (`bun fmt`), and the `justfile` (`just --fmt`).
+- `just fmt`: formats Fish scripts (`fish_indent`), TOML (`taplo`), JavaScript,
+  CSS, and tracked Markdown docs (`bun fmt`), and the `justfile` (`just --fmt`).
 - `just lint`: static checks for Fish syntax (`fish -n`), TOML formatting, JS
-  syntax and formatting (`bun`), typos (`typos`), justfile formatting, and git diff whitespace.
+  and CSS syntax/formatting (`bun`), typos (`typos`), justfile formatting, and git diff whitespace.
 - `just secrets`: fail-closed secret scanning via `gitleaks` with fallback
   regex checks.
 - `just site`: executes `zola build`, `./verify.fish`, and internal link checks.

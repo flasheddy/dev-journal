@@ -315,6 +315,11 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
   background: var(--border);
 }
 
+.project-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
 .project-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

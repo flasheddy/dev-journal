@@ -63,7 +63,8 @@ assert_contains content/blog/offline-visual-verification.md 'tags = ["Playwright
 assert_contains templates/base.html 'get_url(path="css/site.css")'
 assert_contains templates/base.html 'get_url(path="js/site.js")'
 assert_contains templates/base.html data-theme-toggle
-assert_contains templates/index.html 'https://github.com/flasheddy/ensub'
+assert_contains templates/index.html 'https://github.com/flasheddy/price-drop-monitor'
+assert_contains templates/index.html 'https://github.com/flasheddy/event-aggregation-pipeline'
 assert_contains templates/index.html '{{<post_item post={post} />}}'
 assert_contains templates/page.html 'page.reading_time'
 assert_contains templates/page.html 'Back to Articles'

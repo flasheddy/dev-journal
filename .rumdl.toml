@@ -1,0 +1,11 @@
+[global]
+cache = false
+extend-enable = ["MD060"]
+disable = ["MD013"]
+
+[MD031]
+list-items = false
+
+[MD060]
+enabled = true
+style = "compact"

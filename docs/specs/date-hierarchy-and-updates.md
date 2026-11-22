@@ -141,6 +141,7 @@ Update `static/css/site.css` to replace the 2-column `.post-item` grid (`grid-te
 - **Scenario:** An article specifies `date = 2026-11-07` and `updated = 2026-11-07`.
 - **Required Behavior:** `{% if page.updated and page.updated != page.date %}` evaluates to `false`. The template must **not** render a duplicate `Updated November 7, 2026` string or a trailing/duplicate middle dot `·`.
 - **Rendered Output:**
+
   ```html
   <div class="article-meta">
     <time datetime="2026-11-07">November 7, 2026</time>
@@ -190,16 +191,13 @@ Every invariant in `verify.fish` must remain satisfied:
 
 Running `just check` from the repository root must exit `0` with the following exact sub-gate outcomes:
 
-1. **`just check-agents`:**
-   - **PASS Criterion:** Exits `0` and prints `check-agents: rules ok (<N> B / 32768 B)`.
-   - **FAIL Criterion:** Non-zero exit or any `check-agents: <rule>: ...` violation on `stderr`.
-2. **`just lint`:**
+1. **`just lint`:**
    - **PASS Criterion:** Exits `0` and prints `lint: fish syntax, toml, js, typos, justfile format, whitespace`.
    - **FAIL Criterion:** Non-zero exit or any `FAIL:` / `VERIFY FAILED: lint` diagnostic.
-3. **`just secrets`:**
+2. **`just secrets`:**
    - **PASS Criterion:** Exits `0` and prints `secrets: no secret material detected`.
    - **FAIL Criterion:** Non-zero exit or secret detection diagnostic.
-4. **`just site` (`zola build`, `./verify.fish`, `zola check --skip-external-links`):**
+3. **`just site` (`zola build`, `./verify.fish`, `zola check --skip-external-links`):**
    - **PASS Criterion:** Exits `0`, prints `PASS: site contract`, and confirms all internal links resolve.
    - **FAIL Criterion:** Non-zero exit or `FAIL: <reason>` from `./verify.fish` or `zola`.
 
@@ -208,17 +206,21 @@ Running `just check` from the repository root must exit `0` with the following e
 After `zola build` (with `minify_html = true` in `config.toml`), the generated HTML in `public/` must satisfy these exact structural assertions:
 
 - **Unified `.post-item__meta` presence & legacy class removal:**
+
   ```fish
   rg -q 'class="?post-item__meta"?' public/index.html public/blog/index.html
   not rg -q 'post-item__(date|body)' public/index.html public/blog/index.html
   ```
+
 - **Natural date formatting without leading zero:**
+
   ```fish
   rg -q 'Nov\s+7, 2026' public/index.html
   not rg -q 'Nov 07, 2026' public/index.html
   rg -q 'November\s+7, 2026' public/blog/dual-harness-engineering/index.html
   not rg -q 'November 07, 2026' public/blog/dual-harness-engineering/index.html
   ```
+
 - **Edge-case verification for `page.updated` (`missing`, `equal`, `distinct`):**
   - When `updated` is omitted (default across unedited articles):
     ```fish
@@ -285,6 +287,7 @@ After `zola build` (with `minify_html = true` in `config.toml`), the generated H
      }
    }
    ```
+
 3. **Pass / Fail Exit Criteria for `just visual`:**
    - **PASS Criterion:** `just visual` exits `0`, all 16 Playwright tests (8 desktop + 8 mobile, or more if dedicated test blocks are added) pass with `0` retries and `0` page errors, and updated screenshots are written to `.visual/screenshots/`.
    - **FAIL Criterion:** Non-zero exit code, any feed page rendering zero `.post-item` cards, any `.post-item__meta` hidden or styled with `uppercase` or monospace font family, any date displaying a leading zero (`01`–`09`), vertical bounding-box inversion, or `overflowPx > 1`.

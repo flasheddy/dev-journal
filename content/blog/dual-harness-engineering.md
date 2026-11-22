@@ -1,6 +1,7 @@
 +++
 title = "Dual-Harness Engineering: Spec Planning with agy and TDD with OpenCode"
 date = 2026-11-07
+updated = 2026-11-22
 draft = false
 description = "How pair programming across macro-architecture in Antigravity CLI and micro-TDD in OpenCode establishes clean phase boundaries and eliminates cognitive fatigue."
 [taxonomies]
@@ -28,7 +29,7 @@ Every non-trivial engineering task flows through a strict three-phase lifecycle 
 
 1. **Architecture and specification (macro):** The operator engages `agy` in exploration mode. The agent reads repository contracts (`AGENTS.md`), architecture notes, and existing tests to produce a bounded specification or step-by-step checklist (such as an implementation plan artifact). No source files are mutated during this phase.
 2. **Implementation and TDD (micro):** The operator hands the bounded specification to OpenCode. Working in the active checkout, OpenCode introduces interface contracts and failing test cases first, followed by the minimal surgical diff required to satisfy them. Each step is anchored by fast, targeted feedback loops (e.g. running a single test function or linter).
-3. **Workstation verification (gate closure):** Before any change is presented for operator review, the full canonical gate (`just check`) is executed locally. This executes static analysis, secret scans, link checkers, and visual rendering assertions in parallel.
+3. **Workstation verification (gate closure):** Before any change is presented for operator review, the full canonical gate (`just check`) is executed locally. It runs preflight, lint, secret scans, and site checks sequentially. Rendering assertions belong to the separate `just visual` harness, and `just check-fast` is the parallel variant of the same four gates.
 
 Because each phase has an explicit entry and exit criterion, work never drifts into unstructured edits.
 

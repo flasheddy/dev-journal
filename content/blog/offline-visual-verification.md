@@ -1,6 +1,7 @@
 +++
 title = "Offline-First Visual Verification: A Decoupled Playwright Harness"
 date = 2026-09-26
+updated = 2026-11-22
 description = "How a static journal added an offline-first visual verification harness: Playwright driving the host's system Chromium through Bun, with no browser downloads, screenshots routed to a local directory for multimodal inspection, and clamp-based typography that preserves the mobile heading hierarchy."
 [taxonomies]
 tags = ["Playwright", "Bun", "CSS", "Zola"]
@@ -34,7 +35,7 @@ Each project sets `launchOptions.executablePath` to that path. The harness never
 
 ## Screenshots as inspection artifacts
 
-The spec walks a small list of core pages — home, the archive, the article, and the tag taxonomy — once per viewport project: a desktop Chrome profile and a Pixel 5 profile. A helper derives the mode from the measured width, and every capture is named with that prefix:
+The spec walks seven core pages — home, the blog archive, two articles, the tags index, and two tag pages — once per viewport project: a desktop Chrome profile and a Pixel 5 profile. A helper derives the mode from the measured width, and every capture is named with that prefix:
 
 ```js
 function viewportMode(page) {
@@ -57,7 +58,7 @@ Headings moved from fixed sizes to `clamp()` rules so the hierarchy stays monoto
 }
 ```
 
-The body gained `word-break: normal` with `overflow-wrap: break-word`, so text wraps on word boundaries and only breaks inside an overlong token as a last resort. The article list collapses to a single column at a `40rem` breakpoint, and the header navigation wraps rather than forcing overflow.
+The body gained `word-break: normal` with `overflow-wrap: break-word`, so text wraps on word boundaries and only breaks inside an overlong token as a last resort. The header navigation wraps rather than forcing overflow, and the `40rem` query adjusts the project band and section heading; the article list remains single-column at every width.
 
 ## Limitations and next work
 

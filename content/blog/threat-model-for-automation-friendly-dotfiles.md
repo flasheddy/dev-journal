@@ -89,7 +89,7 @@ verification.
 The four boundaries share a shape. Each answers one question mechanically:
 
 | Question | Boundary |
-|---|---|
+| --- | --- |
 | If a component is compromised, what else does it reach? | isolated blast radius |
 | Where can root changes come from, and are they declared? | controlled privilege escalation |
 | Could a mistake leak something unrecoverable? | zero-secret baseline |

@@ -1,7 +1,7 @@
 +++
 title = "Agentic System Management: Running AI Agents Inside a Dotfiles Repository"
 date = 2026-10-18
-updated = 2026-11-07
+updated = 2026-11-22
 draft = false
 description = "What it takes to let AI agents maintain a real workstation: how context is loaded, which configuration surfaces are agent-visible, the prompt patterns that keep work safe, and why every mutation stays human-gated."
 [taxonomies]
@@ -16,7 +16,7 @@ environment is designed, not improvised.
 This is a description of the design — how context reaches an agent, which
 surfaces it can see, and the instruction patterns that keep its work bounded.
 
-_Note (November 2026): This post describes the foundational safety and context architecture. For the active division of labor across Antigravity CLI and OpenCode, see [Dual-Harness Engineering](@/blog/dual-harness-engineering.md)._
+*Note (November 2026): This post describes the foundational safety and context architecture. For the active division of labor across Antigravity CLI and OpenCode, see [Dual-Harness Engineering](@/blog/dual-harness-engineering.md).*
 
 ## Context is the real architecture
 
@@ -27,11 +27,11 @@ treats three layers of context as first-class, each with a different reach:
   session auto-loads from the working directory upward. This is the binding
   contract for anything touching the repository.
 - **Global floor** — a workstation-wide safety document that is inlined into
-  every session by workstation-level agent instructions (~/.AGENTS.md), so no
-  repository can forget it.
-- **A home-path symlink** — a symlink at the home directory pointing at the
-  same global floor, for tools that read the home path directly rather than
-  walking the working directory.
+  every session by workstation-level agent instructions. The live copy at
+  `~/.AGENTS.md` is a regular managed file, not a symlink.
+- **Harness symlinks** — hook 20 links the same global floor into
+  `~/.config/opencode/AGENTS.md` and `~/.gemini/AGENTS.md`, for harnesses that
+  read their own config paths rather than walking the working directory.
 
 The point of all three is redundancy of the *invariant*: whatever an agent
 touches, and whichever reader it uses, the safety floor is in scope.
@@ -43,7 +43,7 @@ being explicit about which surface controls what — and what reaches the agent
 versus what merely sits on disk.
 
 | Artifact | Controls | How it reaches the agent |
-|---|---|---|
+| --- | --- | --- |
 | Runtime config | active model/provider, extension set, thinking effort, context limit | loaded by the agent runtime at startup |
 | Permission posture | which tools are pre-approved, gated, or blocked | loaded by the runtime; also rewritten by it at runtime |
 | Global hints | the workstation-wide safety floor, inlined | injected into the system prompt |
@@ -53,8 +53,7 @@ versus what merely sits on disk.
 
 Two lessons generalize from this table. First, **the runtime rewrites some of
 its own config** — a permission file may be partially machine-managed — so the
-declarative source must tolerate a live file that differs from it and a
-verification gate that knows to ignore the runtime-managed parts. Second,
+declarative source must tolerate a live file that differs from it. Second,
 configuration is *capability*. Changing which tools are pre-approved changes
 what an agent can do without asking, which is why that surface is deliberately
 gated rather than freely editable.

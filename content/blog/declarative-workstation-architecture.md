@@ -1,6 +1,7 @@
 +++
 title = "Declarative Workstation Architecture: Decoupling System Packages from Developer Toolchains"
 date = 2026-10-04
+updated = 2026-11-22
 draft = false
 description = "How a bespoke CachyOS workstation is described declaratively with chezmoi: three installation layers, why language toolchains stay out of the distro package manager, and how checksum-triggered lifecycle hooks keep the machine reproducible."
 [taxonomies]
@@ -22,7 +23,7 @@ toolchains — and why those boundaries are worth defending.
 The machine is described in three deliberately separate layers:
 
 | Layer | Technology | Owners |
-|---|---|---|
+| --- | --- | --- |
 | OS / desktop | CachyOS + a Wayland desktop environment | the distro |
 | System packages | `pacman` + AUR helpers + Flatpak | the distro and packagers |
 | Developer toolchains | official upstream installers (`rustup`, `uv`, `bun`, `go`) | upstream projects |
@@ -41,7 +42,7 @@ Rather than fight that mismatch, the toolchains are installed by their own
 upstream installers and kept entirely in user space:
 
 | Toolchain | Manager | Install location |
-|---|---|---|
+| --- | --- | --- |
 | Rust | `rustup` + `cargo` | `~/.cargo/bin` |
 | Python CLIs | `uv` | `~/.local/bin` |
 | JS/TS tools | `bun` | `~/.bun/bin` |
@@ -56,8 +57,8 @@ Two properties fall out of this:
   can a system upgrade silently replace a pinned toolchain.
 
 Each toolchain is recorded in a plain-text manifest (`toolchains/cargo.txt`,
-`toolchains/uv.txt`, and so on), so the *set* of installed tools is declarative
-even though the installers are imperative.
+`toolchains/uv.txt`, `toolchains/local-bin.txt`, and so on), so the *set* of
+installed tools is declarative even though the installers are imperative.
 
 ## Hooks that run only when their content changes
 
@@ -69,12 +70,13 @@ install.
 
 Three hooks cover the lifecycle in order:
 
-1. **Packages** — installs and updates native packages, AUR packages, and
-   Flatpaks from the manifests.
+1. **Packages** — installs and updates native packages and Flatpaks from
+   `packages/`, plus AUR packages from `archive/pacman-foreign.txt`.
 2. **Toolchains** — bootstraps the managers if missing, then restores the
    sub-tools listed in the toolchain manifests.
-3. **System services** — deploys the one tracked root-level config and enables
-   the relevant timers and services.
+3. **System services** — deploys the one tracked root-level config, enables the
+   relevant timers and services, and links the global agent floor into
+   `~/.config/opencode/AGENTS.md` and `~/.gemini/AGENTS.md`.
 
 Two rules keep the hooks safe to re-run indefinitely. They are **idempotent**:
 every mutation is guarded by a presence check, so N runs equal one. And they
@@ -101,14 +103,15 @@ is a reviewable, reproducible artifact.
 
 ## Anatomy of the source tree
 
-```
+```text
 ~/.local/share/chezmoi
 ├── AGENTS.md              # operational rules for AI agents
 ├── README.md              # quickstart + daily workflow + troubleshooting
-├── packages/              # native / AUR / Flatpak manifests
-├── toolchains/            # rustup, uv, bun, go manifests
-├── dot_config/            # → ~/.config  (fish, editor, prompt, input, agents)
-├── dot_local/             # → ~/.local   (bin symlinks, toolcards)
+├── archive/               # live AUR manifest (pacman-foreign.txt)
+├── packages/              # native / Flatpak manifests
+├── toolchains/            # rustup, uv, bun, go, local-bin manifests
+├── dot_config/            # → ~/.config  (fish, editor, prompt, input)
+├── dot_local/             # → ~/.local   (bin symlinks, desktop entries)
 ├── private_dot_ssh/       # SSH client config only — never keys
 ├── system/                # the one tracked root-level config
 └── run_onchange_after_*.sh.tmpl   # the three lifecycle hooks

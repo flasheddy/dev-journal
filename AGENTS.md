@@ -1,158 +1,118 @@
 # AGENTS.md — Operational Rules for AI Agents
 
-<!-- floor-contract: sha256:cdeb6f92d0948419c1a36387e1675722f37256186f4996d1a1d83479c1ad59ae -->
-
-Binding contract for AI agents (Antigravity CLI, OpenCode) in this repository.
-Inherits the workstation-wide safety floor in `~/.AGENTS.md`.
-Carries only non-obvious traps, verification gates, and mandatory workflows.
+Dev Journal: Zola site published at `https://hech.dev`. Global rules:
+`~/.AGENTS.md`.
 
 ---
 
 ## 1. Repository Architecture & Constraints
 
-### 1.1 Engine & CI Architecture
+### 1.1 Engine & CI
 
-- **Generator:** system Zola, with no hardcoded engine version pin. Host Zola
-  must be 0.23 or later for Tera component syntax.
-- **Decoupled engine contract:** `.github/workflows/deploy.yml` installs the
-  latest Zola via `taiki-e/install-action` (`tool: zola`). Hardcoded version pins
-  in workflow files or documentation are strictly rejected by the site contract.
-- **Deployment:** push to `main` triggers GitHub Pages deployment with pinned
-  actions (`configure-pages@v5`, `upload-pages-artifact@v3`, `deploy-pages@v4`).
-- **Domain & Base URL:** custom domain via `static/CNAME` (`hech.dev`);
+- System Zola >= 0.23; no hardcoded version pins.
+- `.github/workflows/deploy.yml` installs the latest Zola via
+  `taiki-e/install-action` (`tool: zola`), runs `./verify.fish`, then
+  `zola build`.
+- Pages deploy uses pinned actions; custom domain via `static/CNAME`;
   `base_url = "https://hech.dev"`.
+- CI does not run `just check` or `just visual`.
 
-### 1.2 Templates, Components & Styling
+### 1.2 Templates, Styling & Links
 
-- **Tera templates (`templates/`):** `base.html` is the root layout;
-  `index.html` (homepage), `section.html` (archive), `page.html` (article), and
-  `tags.html` / `taxonomy_list.html` / `taxonomy_single.html` extend it.
-- **Component syntax only (`templates/macros.html`):** define via
-  `{% component tag_list(tags) %} … {% endcomponent tag_list %}`; invoke via
-  `{{<post_item post={post} />}}`. Legacy Tera syntax (`{% macro %}`,
-  `{% import %}`, `macros::`, `self::`) is rejected by the site contract.
-- **CSS & Themes (`static/css/site.css`):** hand-written CSS
-  (`compile_sass = false`). Catppuccin Mocha is default dark; Latte is light
-  variant. Scoped to `:root` and `html[data-theme="latte"]`, toggled by
-  `static/js/site.js` (localStorage key `dev-journal-theme`, no-FOUC bootstrap
-  in `base.html`). Pinned card tokens (`#181825`, border `#313244`, radius
-  `8px`, padding `1.25rem 1.35rem` / responsive `1.1rem`) must not be changed.
-- **Syntax highlighting:** inline highlighting via `[markdown.highlighting]`
-  with `theme = "catppuccin-mocha"`. Dual-theme configuration (`light_theme`,
-  `dark_theme`, `add_color_scheme`) is forbidden.
+- `base.html` is the root layout. `index.html`, `section.html`, `page.html`, and
+  `tags.html` extend it; taxonomy templates extend `tags.html`.
+- `macros.html` uses Tera component syntax only. No `{% macro %}`,
+  `{% import %}`, `macros::`, or `self::`.
+- No root-relative `(href|src)="/` in `templates/` or `static/`. Use `get_url`,
+  `get_taxonomy_url`, `get_section`, or `@/…`.
+- External links need `class="external-link"`, `target="_blank"`,
+  `rel="noopener noreferrer"`, and the `↗` glyph.
+- CSS is hand-written (`compile_sass = false`). Mocha is default, Latte is light;
+  pinned card tokens must not change.
+- Syntax highlighting is inline `catppuccin-mocha`; no `light_theme`,
+  `dark_theme`, or `add_color_scheme`.
+- `tags` taxonomy uses `feed = false`.
 
-### 1.3 Link Portability & Taxonomy
+### 1.3 Markdown & Tooling
 
-- **No root-relative URLs:** `(href|src)="/` is rejected in `templates/` and
-  `static/`. Internal links must use `get_url`, `get_taxonomy_url`,
-  `get_section`, or `@/…` paths.
-- **External links:** outbound links use `class="external-link"`,
-  `target="_blank"`, `rel="noopener noreferrer"`, and decorative glyph
-  `<span aria-hidden="true">↗</span>`.
-- **Taxonomy:** `tags` taxonomy (`feed = false`).
+- `.rumdl.toml` pins `MD060.style = "compact"`, disables `MD013`, and sets
+  `MD031.list-items = false`; leave `aligned-delimiter` unset.
+- `rumdl` owns Markdown formatting. `just fmt` may change blog posts only for
+  autofixable lint errors; never rewrite article prose as part of formatting.
+- The local gate depends on system `fish`, `ripgrep`, `rumdl`, `taplo`, `typos`,
+  Bun, and Zola. `gitleaks` is used when present, with a fail-closed regex
+  fallback.
 
-### 1.4 Visual Verification Harness
+### 1.4 Visual Harness
 
-- **Decoupled Playwright runner (`verify-visual.fish`):** checks rendering
-  health and writes screenshots to `.visual/screenshots/`.
-- **Toolchain:** managed by Bun (`bun.lock`; never generate or commit
-  `package-lock.json`). Uses system Chromium (`/usr/bin/chromium`); never
-  download Playwright browsers.
-- **Decoupling invariant:** visual verification must never be called by
-  `verify.fish` or added to `.github/workflows/deploy.yml`.
-
----
+- `just visual` only. Never call it from `verify.fish` or CI.
+- Bun + `bun.lock`; system Chromium at `/usr/bin/chromium`; no browser
+  downloads.
+- Screenshots: `.visual/screenshots/`; report: `.visual/report/index.html`.
+- Keep `CORE_PAGES`/`FEED_PAGES` in `tests/visual.spec.js` aligned with page and
+  tag changes.
 
 ## 2. Operating Protocols
 
-### 2.1 Editorial Standards & Front Matter
+### 2.1 Editorial & Content
 
-- **Article format:** articles live in `content/blog/` with TOML front matter:
+- Articles live in `content/blog/` with TOML front matter: `title`, ISO `date`,
+  `description`, `tags`; optional top-level `updated` (never nested).
+- `updated` renders only in article headers when distinct from `date`; feed
+  cards show only `date`.
+- `content/blog/_index.md` keeps `sort_by = "date"`, `template = "section.html"`,
+  and `page_template = "page.html"`.
+- Follow `docs/editorial-workflow.md`: evidence-bounded claims, no invented
+  metrics, synthetic data, no secrets or private paths.
+- Specs in `docs/specs/` are historical; `verify.fish` wins contradictions.
 
-  ```toml
-  +++
-  title = "Post title"
-  date = 2026-09-26          # ISO year-month-day
-  description = "Short summary for lists and metadata."
-  [taxonomies]
-  tags = ["Playwright", "Bun", "CSS", "Zola"]
-  +++
-  ```
+### 2.2 Content Invariants
 
-- **Writing discipline:** follow `docs/editorial-workflow.md`. Factual claims
-  must be evidence-bounded (observed command output, reviewed source diff, or
-  explicitly labeled hypothesis).
-- **Synthetic data & redaction:** never commit credentials, personal data, or
-  private paths. Use synthetic placeholders.
-- **Approval gates:** drafting and local checks are read-only; publishing or
-  remote pushing requires explicit operator approval (`draft` →
-  `locally validated` → `published`).
+- `content/blog/offline-visual-verification.md` is contract-pinned: exact title
+  and tags.
+- Homepage keeps the `Hi, I’m Chen.` intro and `Latest articles` feed. Keep the
+  project band commented out and keep its `ensub` URL; `verify.fish` asserts it.
+- Renaming a published article changes its URL; get operator direction first.
+- `just fmt` runs `rumdl fmt` over all tracked Markdown. Blog posts change only
+  for autofixable lint errors; do not rewrite their prose.
 
-### 2.2 Content Invariants & Stability
+### 2.3 Verification Gates
 
-- **Contract-pinned content:** never alter, rename, retag, or displace
-  `content/blog/offline-visual-verification.md` (exact title
-  `Offline-First Visual Verification: A Decoupled Playwright Harness` and tags
-  `["Playwright", "Bun", "CSS", "Zola"]`).
-- **Homepage structure:** preserve intro ("Hi, I'm Chen.") and latest articles
-  feed in `templates/index.html`. Keep the featured project band commented out.
-
-### 2.3 Verification Gates & Justfile Entry Points
-
-All checks are codified in `justfile` and fail closed:
-
-- `just check-agents`: validates `AGENTS.md` against 7 hygiene rules (no
-  tables, bun fmt idempotency, 32KB cap, single H1, no duplicate bullets >= 40
-  chars, balanced fences, floor freshness).
-- `just fmt`: formats Fish scripts (`fish_indent`), TOML (`taplo`), JavaScript,
-  CSS, and tracked Markdown docs (`bun fmt`), and the `justfile` (`just --fmt`).
-- `just lint`: static checks for Fish syntax (`fish -n`), TOML formatting, JS
-  and CSS syntax/formatting (`bun`), typos (`typos`), justfile formatting, and git diff whitespace.
-- `just secrets`: fail-closed secret scanning via `gitleaks` with fallback
-  regex checks.
-- `just site`: executes `zola build`, `./verify.fish`, and internal link checks.
-- `just check-fast`: parallel gate execution (pinned to 3 jobs).
-- `just check`: canonical full verification gate (`check-agents lint secrets site`).
-- `just visual`: runs decoupled Playwright visual verification.
-- `just floor-stamp`: refreshes floor-contract marker against live
-  `~/.AGENTS.md`.
-
----
+- `just preflight`: required tools and contract files; fail-closed.
+- `just fmt`: fish, TOML, JS, CSS, all tracked Markdown, justfile.
+- `just lint`: rumdl, fish syntax and formatting, TOML, JS/CSS, typos, justfile,
+  staged and unstaged diff whitespace; rejects non-Bun lockfiles.
+- `just secrets`: `gitleaks` with fail-closed regex fallback.
+- `just site`: `zola build`, `./verify.fish`, `zola check --skip-external-links`.
+- `just check`: canonical gate over `preflight`, `lint`, `secrets`, and `site`.
+  No visual harness.
+- `just check-fast`: same four gates in parallel.
+- `just visual`: rendering checks only.
+- Global pre-push runs `just check`. No `precommit` recipe here; global
+  pre-commit uses staged whitespace/secret fallback.
 
 ## 3. Forbidden Actions
 
-Inherits workstation-wide forbidden actions in `~/.AGENTS.md`. Dev-journal
-specific:
-
-1. **Never use legacy Tera macro syntax**: no `{% macro %}`, `{% import %}`,
-   `macros::`, or `self::` in `templates/`.
-2. **Never hardcode root-relative asset or navigation URLs**: no `(href|src)="/`
-   in `templates/` or `static/`.
-3. **Never add dual-theme syntax highlighting config**: no `light_theme`,
-   `dark_theme`, or `add_color_scheme` in `config.toml`.
-4. **Never hardcode Zola engine version pins**: no `zola@[0-9]` in CI workflow
-   or hardcoded engine version strings in documentation.
-5. **Never couple visual verification into CI or `verify.fish`**: keep
-   Playwright harness strictly decoupled and optional.
-6. **Never alter contract-pinned content**: do not modify
-   `content/blog/offline-visual-verification.md` title/tags or displace homepage
-   structure without explicit operator direction.
-7. **Never generate or commit `package-lock.json`**: use Bun exclusively
-   (`bun.lock`).
-8. **Never mutate unformatted content files blindly**: `just fmt` restricts
-   markdown formatting to tracked documentation/agent files, preserving blog
-   post markup stability.
-9. **Never use Markdown tables in `AGENTS.md`**: tables break bun fmt
-   idempotency and trigger the hygiene gate.
-
----
+- No legacy Tera macro syntax.
+- No root-relative URLs.
+- No dual-theme syntax highlighting config.
+- No hardcoded Zola version pins.
+- No visual verification in CI or `verify.fish`.
+- No changes to contract-pinned content or homepage structure without operator
+  direction.
+- No non-Bun lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`).
+- No Markdown tables in `AGENTS.md`.
+- No committing `public/`, `.visual/`, `test-results/`, or `playwright-report/`.
+- Do not weaken gates to make a change pass.
 
 ## 4. Verification Checklist
 
-After changes, run:
-
 ```fish
-just fmt             # format fish, toml, markdown docs, justfile
-just check           # full verification gate (agents, lint, secrets, site contract)
-git status --short   # clean working tree, no secrets staged
+just fmt
+just check
+just visual   # only when templates, CSS, JS, or rendered content changes
+git status --short --branch
 ```
+
+Leave changes unstaged. Report what changed, where, why, how verified, and what
+remains.

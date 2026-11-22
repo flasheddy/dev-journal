@@ -111,14 +111,18 @@ Run the repository's verification gates from the root before transitioning an
 article from `draft` to `locally validated`:
 
 ```fish
+just fmt
 just check
 just visual
 ```
 
-- `just check` executes the canonical verification pipeline: agent hygiene
-  validation (`check-agents`), static checks and git diff whitespace (`lint`),
-  secret scanning (`secrets`), site export (`zola build`), template/style
-  invariants (`./verify.fish`), and internal link integrity (`zola check`).
+- `just check` executes the canonical verification pipeline: required tools and
+  contract files (`preflight`), Markdown/fish/TOML/JS/CSS checks, typos, justfile
+  format, and Git diff whitespace (`lint`), secret scanning (`secrets`), site
+  export (`zola build`), template/style invariants (`./verify.fish`), and
+  internal link integrity (`zola check`).
+- `just fmt` may change existing blog posts only for autofixable Markdown lint
+  errors; review the diff and do not rewrite article prose.
 - `just visual` runs the decoupled Playwright harness (Bun + system Chromium at
   `/usr/bin/chromium`; install dependencies once via `bun install`) and writes
   full-page screenshots to `.visual/screenshots/`; inspect them to confirm new

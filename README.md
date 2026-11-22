@@ -4,7 +4,9 @@ A small static engineering journal built with [Zola](https://www.getzola.org/) a
 
 ## Quickstart
 
-Install system Zola (0.23 or later) and [just](https://github.com/casey/just), then start the local preview server:
+Install system Zola (0.23 or later), [just](https://github.com/casey/just),
+`fish`, `ripgrep`, `rumdl`, `taplo`, `typos`, and Bun, then start the local
+preview server:
 
 ```fish
 just serve   # or: zola serve
@@ -17,12 +19,14 @@ Open the local preview URL printed in the terminal (default `http://127.0.0.1:11
 The repository uses `just` as its unified, fail-closed task runner:
 
 - `just` (default): runs the canonical verification gate (`just check`).
+- `just preflight`: fail-closed check for the required tools and contract files.
 - `just serve`: starts the local development preview server with live reload.
-- `just check`: canonical full gate combining agents hygiene, static linting, secret scanning, and site contract checks.
-- `just check-fast`: fast parallel gate execution (pinned to 3 worker jobs).
-- `just fmt`: auto-formats Fish scripts (`fish_indent`), TOML configs (`taplo`), JavaScript files, tracked Markdown docs (`bun fmt`), and the `justfile`.
-- `just lint`: static verification covering Fish syntax (`fish -n`), TOML format, JS syntax and formatting (`bun`), typos (`typos`), and Git diff whitespace.
+- `just check`: canonical full gate combining preflight, static linting, secret scanning, and site contract checks.
+- `just check-fast`: same four gates, executed in parallel.
+- `just fmt`: auto-formats Fish scripts (`fish_indent`), TOML configs (`taplo`), JavaScript and CSS (`bun fmt`), all tracked Markdown (`rumdl`), and the `justfile`.
+- `just lint`: static verification covering Markdown (`rumdl`), Fish syntax and formatting, TOML format, JS syntax and formatting (`bun`), typos (`typos`), the `justfile`, and staged/unstaged Git diff whitespace.
 - `just secrets`: fail-closed secret scanning via `gitleaks` (with regex fallback).
+- `just site`: builds the site, runs the site contract, and validates internal links.
 - `just visual`: runs the decoupled Playwright visual regression harness.
 
 ## Visual Verification
@@ -53,6 +57,7 @@ tags = ["Playwright", "Bun", "CSS", "Zola"]
 Validate changes and site invariants locally before committing:
 
 ```fish
+just fmt
 just check
 just visual
 ```

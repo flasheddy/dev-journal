@@ -7,6 +7,7 @@ import {
   getPosts,
   isUpdated,
   isoDate,
+  postPath,
   postTags,
   readingTime,
   type BlogPost,
@@ -15,23 +16,34 @@ import {
 export async function getStaticPaths() {
   const posts = await getPosts();
 
-  return posts.map((post) => ({
+  return posts.map((post, index) => ({
     params: { slug: post.id },
-    props: { post },
+    props: {
+      post,
+      prevPost: index < posts.length - 1 ? posts[index + 1] : undefined,
+      nextPost: index > 0 ? posts[index - 1] : undefined,
+    },
   }));
 }
 
 interface Props {
   post: BlogPost;
+  prevPost?: BlogPost;
+  nextPost?: BlogPost;
 }
 
-const { post } = Astro.props;
-const { Content } = await render(post);
+const { post, prevPost, nextPost } = Astro.props;
+const { Content, headings } = await render(post);
 const tags = postTags(post);
+const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const showToc = tocHeadings.length >= 3;
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description}>
-  <article class="article">
+  <div class="reading-progress" data-reading-progress aria-hidden="true">
+    <div class="reading-progress__bar" data-reading-progress-bar></div>
+  </div>
+  <article class="article" data-article-body>
     <header class="article-header reading-column">
       <a class="back-link" href="/blog/">← Back to Articles</a>
       <h1>{post.data.title}</h1>
@@ -55,11 +67,92 @@ const tags = postTags(post);
       </div>
       <TagList tags={tags} />
     </header>
-    <div class="prose reading-column">
-      <Content />
+    <div class:list={['article-layout', { 'article-layout--with-toc': showToc }]}>
+      {
+        showToc && (
+          <nav class="article-toc reading-column" aria-label="Table of contents">
+            <details class="toc toc-mobile">
+              <summary class="toc__summary">
+                <span class="toc__title">Table of Contents</span>
+                <span class="toc__meta">
+                  <span class="toc__count">{tocHeadings.length} sections</span>
+                  <svg
+                    class="toc__chevron"
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </summary>
+              <ol class="toc__list">
+                {tocHeadings.map((heading) => (
+                  <li class:list={['toc__item', { 'toc__item--nested': heading.depth === 3 }]}>
+                    <a href={`#${heading.slug}`}>{heading.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </details>
+
+            <div class="toc-rail">
+              <p class="toc-rail__heading">Contents</p>
+              <ol class="toc-rail__list">
+                {tocHeadings.map((heading) => (
+                  <li
+                    class:list={[
+                      'toc-rail__item',
+                      { 'toc-rail__item--nested': heading.depth === 3 },
+                    ]}
+                  >
+                    <a
+                      class="toc-rail__link"
+                      href={`#${heading.slug}`}
+                      data-toc-link={heading.slug}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </nav>
+        )
+      }
+      <div class="prose reading-column">
+        <Content />
+      </div>
     </div>
     <footer class="article-footer reading-column">
-      <a class="back-link" href="/blog/">← Back to Articles</a>
+      {
+        (prevPost || nextPost) && (
+          <nav class="article-pager" aria-label="Adjacent articles">
+            {prevPost ? (
+              <a class="article-pager__link article-pager__link--prev" href={postPath(prevPost)}>
+                <span class="article-pager__label">← Previous</span>
+                <span class="article-pager__title">{prevPost.data.title}</span>
+              </a>
+            ) : (
+              <span class="article-pager__spacer" aria-hidden="true" />
+            )}
+            {nextPost && (
+              <a class="article-pager__link article-pager__link--next" href={postPath(nextPost)}>
+                <span class="article-pager__label">Next →</span>
+                <span class="article-pager__title">{nextPost.data.title}</span>
+              </a>
+            )}
+          </nav>
+        )
+      }
+      <div class="article-footer__back">
+        <a class="back-link" href="/blog/">← Back to Articles</a>
+      </div>
     </footer>
   </article>
 </BaseLayout>

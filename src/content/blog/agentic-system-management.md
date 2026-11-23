@@ -16,7 +16,7 @@ environment is designed, not improvised.
 This is a description of the design — how context reaches an agent, which
 surfaces it can see, and the instruction patterns that keep its work bounded.
 
-*Note (November 2026): This post describes the foundational safety and context architecture. For the active division of labor across Antigravity CLI and OpenCode, see [Dual-Harness Engineering](@/blog/dual-harness-engineering.md).*
+*Note (November 2026): This post describes the foundational safety and context architecture. For the active division of labor across Antigravity CLI and OpenCode, see [Dual-Harness Engineering](/blog/dual-harness-engineering/).*
 
 ## Context is the real architecture
 

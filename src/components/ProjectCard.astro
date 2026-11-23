@@ -1,0 +1,29 @@
+---
+import type { Project } from '../lib/posts';
+
+interface Props {
+  project: Project;
+}
+
+const { project } = Astro.props;
+---
+
+<article class="project-card">
+  <div class="project-card__content">
+    <div>
+      <h3>{project.data.title}</h3>
+      <p>{project.data.description}</p>
+    </div>
+    <ul class="tech-list" aria-label={`${project.data.title} technologies`}>
+      {project.data.tech.map((tech) => <li>{tech}</li>)}
+    </ul>
+  </div>
+  <a
+    class="project-link external-link"
+    href={project.data.url}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    View project <span aria-hidden="true">↗</span>
+  </a>
+</article>

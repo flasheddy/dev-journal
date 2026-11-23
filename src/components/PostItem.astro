@@ -1,6 +1,6 @@
 ---
 import type { BlogPost } from '../lib/posts';
-import { formatDate, isoDate, postPath, postTags, readingTime } from '../lib/posts';
+import { formatDate, isoDate, postPath, postTags, readingTime, slugifyTag } from '../lib/posts';
 import TagList from './TagList.astro';
 
 interface Props {
@@ -8,10 +8,12 @@ interface Props {
 }
 
 const { post } = Astro.props;
+const tags = postTags(post);
+const tagSlugs = tags.map((tag) => slugifyTag(tag));
 const minutes = readingTime(post.body ?? '');
 ---
 
-<article class="post-item">
+<article class="post-item" data-tags={tagSlugs.join(',')}>
   <h3><a class="post-item__link" href={postPath(post)}>{post.data.title}</a></h3>
   <div class="post-item__byline">
     <div class="post-item__meta"><time datetime={isoDate(post.data.date)}>{formatDate(post.data.date, 'short')}</time></div>
@@ -19,5 +21,5 @@ const minutes = readingTime(post.body ?? '');
     <span class="post-item__reading">{minutes} min read</span>
   </div>
   {post.data.description && <p>{post.data.description}</p>}
-  <TagList tags={postTags(post)} />
+  <TagList tags={tags} />
 </article>

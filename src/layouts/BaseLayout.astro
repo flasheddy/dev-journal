@@ -10,7 +10,10 @@ interface Props {
 
 const { title, description = site.description } = Astro.props;
 const pageTitle = title ? `${title} · ${site.title}` : site.title;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
+const pathname = Astro.url.pathname;
+const canonical = new URL(pathname, Astro.site ?? site.url).href;
+const isNavActive = (href: string) =>
+  href === '/blog/' && (pathname.startsWith('/blog/') || pathname.startsWith('/tags/'));
 ---
 
 <!doctype html>
@@ -42,16 +45,29 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
         <a class="site-name" href="/">Dev Journal</a>
         <nav class="site-nav" aria-label="Primary navigation">
           {
-            site.nav.map((item) => (
-              <a
-                class="external-link"
-                href={item.href}
-                target={item.external ? '_blank' : undefined}
-                rel={item.external ? 'noopener noreferrer' : undefined}
-              >
-                {item.label} <span aria-hidden="true">↗</span>
-              </a>
-            ))
+            site.nav.map((item) => {
+              const isInternal = item.href.startsWith('/');
+              const active = isNavActive(item.href);
+
+              return isInternal ? (
+                <a
+                  class:list={['site-nav__link', { 'is-active': active }]}
+                  href={item.href}
+                  aria-current={pathname === item.href ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <a
+                  class="external-link"
+                  href={item.href}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                >
+                  {item.label} <span aria-hidden="true">↗</span>
+                </a>
+              );
+            })
           }
           <button
             class="icon-button theme-toggle"

@@ -7,6 +7,11 @@ export const site = {
   email: 'chen@hech.dev',
   nav: [
     {
+      label: 'Articles',
+      href: '/blog/',
+      external: false,
+    },
+    {
       label: 'Dotfiles',
       href: 'https://github.com/flasheddy/dotfiles',
       external: true,

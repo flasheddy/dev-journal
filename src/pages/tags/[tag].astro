@@ -25,6 +25,7 @@ const description = `${count} ${count === 1 ? 'article' : 'articles'} tagged “
 <BaseLayout title={tag.name} description={description}>
   <section class="archive shell">
     <header class="page-heading">
+      <a class="back-link page-heading__back" href="/blog/">← Back to Articles</a>
       <p class="page-heading__context">{site.tags.context}</p>
       <h1>{tag.name}</h1>
       <p>{description}</p>

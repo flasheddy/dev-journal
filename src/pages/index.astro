@@ -2,12 +2,31 @@
 import PostItem from '../components/PostItem.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPosts, getProjects } from '../lib/posts';
+import { getPosts, getProjects, slugifyTag } from '../lib/posts';
 import { site } from '../lib/site';
 
 const posts = await getPosts();
 const latestPosts = posts.slice(0, 3);
 const projects = await getProjects();
+
+const projectTagCounts = new Map<string, { name: string; slug: string; count: number }>();
+for (const project of projects) {
+  const seenInProject = new Set<string>();
+  for (const tech of project.data.tech) {
+    const slug = slugifyTag(tech);
+    if (!slug || seenInProject.has(slug)) continue;
+    seenInProject.add(slug);
+    const existing = projectTagCounts.get(slug);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      projectTagCounts.set(slug, { name: tech, slug, count: 1 });
+    }
+  }
+}
+const projectTags = [...projectTagCounts.values()].sort(
+  (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+);
 ---
 
 <BaseLayout>
@@ -24,12 +43,44 @@ const projects = await getProjects();
 
   <section class="project-band" id="projects" aria-labelledby="project-title">
     <div class="shell">
-      <div class="section-heading">
+      <div class="section-heading section-heading--projects">
         <h2 id="project-title">{site.projects.title}</h2>
         <span class="section-rule" aria-hidden="true"></span>
+        {
+          projectTags.length > 0 && (
+            <div
+              class="project-filter"
+              role="group"
+              aria-label="Filter projects by technology"
+              data-project-filter
+            >
+              <button
+                type="button"
+                class="topic-filter__pill project-filter__pill is-active"
+                data-filter-tag="all"
+                aria-pressed="true"
+              >
+                All
+              </button>
+              {projectTags.map((tag) => (
+                <button
+                  type="button"
+                  class="topic-filter__pill project-filter__pill"
+                  data-filter-tag={tag.slug}
+                  aria-pressed="false"
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          )
+        }
       </div>
-      <div class="project-list">
+      <div class="project-list" data-project-list>
         {projects.map((project) => <ProjectCard project={project} />)}
+        <p class="empty-state" data-project-empty hidden>
+          No projects match this technology.
+        </p>
       </div>
     </div>
   </section>

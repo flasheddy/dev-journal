@@ -1,5 +1,6 @@
 ---
 import type { Project } from '../lib/posts';
+import { slugifyTag } from '../lib/posts';
 
 interface Props {
   project: Project;
@@ -8,9 +9,10 @@ interface Props {
 const { project } = Astro.props;
 const host = new URL(project.data.url).hostname.replace(/^www\./, '');
 const sourceLabel = host === 'github.com' ? 'Open Source' : host;
+const tagSlugs = project.data.tech.map((tech) => slugifyTag(tech)).filter(Boolean);
 ---
 
-<article class="project-card">
+<article class="project-card" data-tags={tagSlugs.join(',')}>
   <div class="project-card__header">
     <h3>{project.data.title}</h3>
     <span class="project-card__status">{sourceLabel}</span>

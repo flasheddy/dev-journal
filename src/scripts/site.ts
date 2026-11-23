@@ -443,11 +443,60 @@ function syncTopicFilterFromUrl(): void {
   applyFilter(initialTag, false);
 }
 
+function initProjectFilter(): void {
+  const filterBar = document.querySelector<HTMLElement>('[data-project-filter]');
+  const list = document.querySelector<HTMLElement>('[data-project-list]');
+  if (!filterBar || !list) return;
+
+  const buttons = Array.from(filterBar.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
+  const items = Array.from(list.querySelectorAll<HTMLElement>('.project-card[data-tags]'));
+  const emptyEl = list.querySelector<HTMLElement>('[data-project-empty]');
+  if (buttons.length === 0) return;
+
+  const validSlugs = new Set(buttons.map((button) => button.dataset.filterTag ?? 'all'));
+
+  const applyFilter = (rawSlug: string): void => {
+    const active = validSlugs.has(rawSlug) ? rawSlug : 'all';
+
+    for (const button of buttons) {
+      const isSelected = (button.dataset.filterTag ?? 'all') === active;
+      button.classList.toggle('is-active', isSelected);
+      button.setAttribute('aria-pressed', String(isSelected));
+    }
+
+    let visibleCount = 0;
+    for (const item of items) {
+      const tags = (item.dataset.tags ?? '').split(',').filter(Boolean);
+      const visible = active === 'all' || tags.includes(active);
+      item.hidden = !visible;
+      if (visible) visibleCount += 1;
+    }
+
+    if (emptyEl) {
+      emptyEl.hidden = visibleCount > 0;
+    }
+  };
+
+  if (filterBar.dataset.filterBound !== 'true') {
+    filterBar.dataset.filterBound = 'true';
+    filterBar.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>('[data-filter-tag]');
+      if (!button) return;
+      applyFilter(button.dataset.filterTag ?? 'all');
+    });
+  }
+
+  const activeButton = buttons.find((button) => button.classList.contains('is-active'));
+  applyFilter(activeButton?.dataset.filterTag ?? 'all');
+}
+
 function setup(): void {
   renderThemeControl();
   enhanceCodeBlocks();
   enhanceHeadingAnchors();
   syncTopicFilterFromUrl();
+  initProjectFilter();
   initReadingProgress();
   initTocScrollSpy();
 }

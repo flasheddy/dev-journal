@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 const CORE_PAGES = [
   { name: 'home', path: '/' },
@@ -84,6 +84,14 @@ test.describe('core page rendering health', () => {
       expect(pageErrors).toEqual([]);
     });
   }
+
+  test('enhances code blocks with copy controls', async ({ page }) => {
+    await page.goto('/blog/offline-visual-verification/');
+
+    const button = page.locator('.prose .code-block .copy-button').first();
+    await expect(button).toBeVisible();
+    await expect(button).toHaveAttribute('aria-label', 'Copy code');
+  });
 
   test('theme toggle swaps moon/sun icon with theme state', async ({ page }) => {
     await page.goto('/');

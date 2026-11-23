@@ -1,0 +1,26 @@
+---
+import PostItem from '../../components/PostItem.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts } from '../../lib/posts';
+import { site } from '../../lib/site';
+
+const posts = await getPosts();
+---
+
+<BaseLayout title={site.blog.title} description={site.blog.description}>
+  <section class="archive shell">
+    <header class="page-heading">
+      <h1>{site.blog.title}</h1>
+      <p>{site.blog.description}</p>
+    </header>
+    <div class="post-list">
+      {
+        posts.length > 0 ? (
+          posts.map((post) => <PostItem post={post} />)
+        ) : (
+          <p class="empty-state">No articles yet. The first field note is on its way.</p>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

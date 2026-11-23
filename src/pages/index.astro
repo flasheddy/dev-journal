@@ -1,0 +1,51 @@
+---
+import PostItem from '../components/PostItem.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, getProjects } from '../lib/posts';
+import { site } from '../lib/site';
+
+const posts = await getPosts();
+const projects = await getProjects();
+---
+
+<BaseLayout>
+  <section class="intro shell" aria-labelledby="intro-title">
+    <p class="intro__mark" aria-hidden="true">~/</p>
+    <div>
+      <h1 id="intro-title">Hi, I’m Chen.</h1>
+      <p>
+        I write about extraction infrastructure, adversarial data pipelines, and local-first
+        software with Rust and Python.
+      </p>
+    </div>
+  </section>
+
+  <section class="project-band" id="projects" aria-labelledby="project-title">
+    <div class="shell">
+      <div class="section-heading">
+        <h2 id="project-title">{site.projects.title}</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+      </div>
+      <div class="project-list">
+        {projects.map((project) => <ProjectCard project={project} />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="article-feed shell" aria-labelledby="articles-title">
+    <div class="section-heading">
+      <h2 id="articles-title">Latest articles</h2>
+      <a href="/blog/">View all</a>
+    </div>
+    <div class="post-list">
+      {
+        posts.length > 0 ? (
+          posts.map((post) => <PostItem post={post} />)
+        ) : (
+          <p class="empty-state">No articles yet. The first field note is on its way.</p>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

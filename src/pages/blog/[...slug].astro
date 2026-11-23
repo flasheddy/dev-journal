@@ -1,0 +1,65 @@
+---
+import { render } from 'astro:content';
+import TagList from '../../components/TagList.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  formatDate,
+  getPosts,
+  isUpdated,
+  isoDate,
+  postTags,
+  readingTime,
+  type BlogPost,
+} from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: BlogPost;
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const tags = postTags(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article class="article">
+    <header class="article-header reading-column">
+      <a class="back-link" href="/blog/">← Back to Articles</a>
+      <h1>{post.data.title}</h1>
+      <div class="article-meta">
+        <time datetime={isoDate(post.data.date)}>{formatDate(post.data.date, 'long')}</time>
+        {
+          isUpdated(post) && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>
+                Updated{' '}
+                <time datetime={isoDate(post.data.updated!)}>
+                  {formatDate(post.data.updated!, 'long')}
+                </time>
+              </span>
+            </>
+          )
+        }
+        <span aria-hidden="true">·</span>
+        <span>{readingTime(post.body ?? '')} min read</span>
+      </div>
+      <TagList tags={tags} />
+    </header>
+    <div class="prose reading-column">
+      <Content />
+    </div>
+    <footer class="article-footer reading-column">
+      <a class="back-link" href="/blog/">← Back to Articles</a>
+    </footer>
+  </article>
+</BaseLayout>

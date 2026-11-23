@@ -1,10 +1,10 @@
-const { defineConfig, devices } = require('@playwright/test');
+import { defineConfig, devices } from '@playwright/test';
 
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 const PORT = process.env.VISUAL_PORT || '1112';
 const BASE = `http://127.0.0.1:${PORT}`;
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -33,7 +33,7 @@ module.exports = defineConfig({
     },
   ],
   webServer: {
-    command: `zola serve --interface 127.0.0.1 --port ${PORT}`,
+    command: `PORT=${PORT} bun --bun run dev`,
     url: BASE,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

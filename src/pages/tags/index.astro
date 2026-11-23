@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getTagIndex, tagPath } from '../../lib/posts';
+import { site } from '../../lib/site';
+
+const tags = await getTagIndex();
+---
+
+<BaseLayout title={site.tags.title} description={site.tags.description}>
+  <section class="archive shell">
+    <header class="page-heading">
+      <p class="page-heading__context">{site.tags.context}</p>
+      <h1>{site.tags.title}</h1>
+      <p>{site.tags.description}</p>
+    </header>
+    <ul class="taxonomy-grid">
+      {
+        tags.map((tag) => (
+          <li>
+            <a href={tagPath(tag.name)}>
+              <span>{tag.name}</span>
+              <span>
+                {tag.posts.length} {tag.posts.length === 1 ? 'article' : 'articles'}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

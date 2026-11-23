@@ -1,17 +1,25 @@
 const storageKey = 'dev-journal-theme';
 const root = document.documentElement;
 
+const copyIconMarkup =
+  '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+const checkIconMarkup =
+  '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
 function currentTheme(): 'mocha' | 'latte' {
   return root.dataset.theme === 'latte' ? 'latte' : 'mocha';
 }
 
-function applyThemeFromStorage(): void {
+function readStoredTheme(): 'mocha' | 'latte' {
   try {
-    const saved = localStorage.getItem(storageKey);
-    root.dataset.theme = saved === 'latte' ? 'latte' : 'mocha';
+    return localStorage.getItem(storageKey) === 'latte' ? 'latte' : 'mocha';
   } catch {
-    root.dataset.theme = 'mocha';
+    return 'mocha';
   }
+}
+
+function applyThemeFromStorage(): void {
+  root.dataset.theme = readStoredTheme();
 }
 
 function renderThemeControl(): void {
@@ -61,18 +69,22 @@ function enhanceCodeBlocks(): void {
       button.className = 'copy-button';
       button.type = 'button';
       button.setAttribute('aria-label', 'Copy code');
-      button.innerHTML =
-        '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+      button.innerHTML = copyIconMarkup;
       wrapper.append(button);
+
+      let resetTimer: number | undefined;
 
       button.addEventListener('click', async () => {
         try {
           await copyText(pre.innerText);
           button.dataset.copied = 'true';
+          button.innerHTML = checkIconMarkup;
           button.setAttribute('aria-label', 'Code copied');
           if (status) status.textContent = 'Code copied to clipboard';
-          window.setTimeout(() => {
+          if (resetTimer !== undefined) window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
             delete button.dataset.copied;
+            button.innerHTML = copyIconMarkup;
             button.setAttribute('aria-label', 'Copy code');
           }, 1800);
         } catch {
@@ -94,8 +106,14 @@ document.addEventListener('click', (event) => {
   }
 });
 
-// ClientRouter replaces the body without re-running this bundled module. Restore
-// theme state early in the swap, then rebuild the per-page controls.
+// ClientRouter replaces the body without re-running this bundled module. Apply
+// theme before the DOM swap to avoid light/dark flashes, then rebuild per-page controls.
+document.addEventListener('astro:before-swap', (event) => {
+  const swapEvent = event as Event & { newDocument?: Document };
+  if (swapEvent.newDocument) {
+    swapEvent.newDocument.documentElement.dataset.theme = readStoredTheme();
+  }
+});
 document.addEventListener('astro:after-swap', applyThemeFromStorage);
 document.addEventListener('astro:page-load', setup);
 

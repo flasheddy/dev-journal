@@ -1,6 +1,6 @@
 ---
 import type { BlogPost } from '../lib/posts';
-import { formatDate, isoDate, postPath, postTags } from '../lib/posts';
+import { formatDate, isoDate, postPath, postTags, readingTime } from '../lib/posts';
 import TagList from './TagList.astro';
 
 interface Props {
@@ -8,11 +8,16 @@ interface Props {
 }
 
 const { post } = Astro.props;
+const minutes = readingTime(post.body ?? '');
 ---
 
 <article class="post-item">
-  <h3><a href={postPath(post)}>{post.data.title}</a></h3>
-  <div class="post-item__meta"><time datetime={isoDate(post.data.date)}>{formatDate(post.data.date, 'short')}</time></div>
+  <h3><a class="post-item__link" href={postPath(post)}>{post.data.title}</a></h3>
+  <div class="post-item__byline">
+    <div class="post-item__meta"><time datetime={isoDate(post.data.date)}>{formatDate(post.data.date, 'short')}</time></div>
+    <span class="post-item__sep" aria-hidden="true">·</span>
+    <span class="post-item__reading">{minutes} min read</span>
+  </div>
   {post.data.description && <p>{post.data.description}</p>}
   <TagList tags={postTags(post)} />
 </article>

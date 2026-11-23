@@ -6,24 +6,27 @@ interface Props {
 }
 
 const { project } = Astro.props;
+const host = new URL(project.data.url).hostname.replace(/^www\./, '');
+const sourceLabel = host === 'github.com' ? 'Open Source' : host;
 ---
 
 <article class="project-card">
-  <div class="project-card__content">
-    <div>
-      <h3>{project.data.title}</h3>
-      <p>{project.data.description}</p>
-    </div>
+  <div class="project-card__header">
+    <h3>{project.data.title}</h3>
+    <span class="project-card__status">{sourceLabel}</span>
+  </div>
+  <p class="project-card__description">{project.data.description}</p>
+  <div class="project-card__footer">
     <ul class="tech-list" aria-label={`${project.data.title} technologies`}>
       {project.data.tech.map((tech) => <li>{tech}</li>)}
     </ul>
+    <a
+      class="project-link external-link"
+      href={project.data.url}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View project<span class="sr-only">: {project.data.title}</span> <span aria-hidden="true">↗</span>
+    </a>
   </div>
-  <a
-    class="project-link external-link"
-    href={project.data.url}
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    View project <span aria-hidden="true">↗</span>
-  </a>
 </article>

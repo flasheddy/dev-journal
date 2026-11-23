@@ -37,7 +37,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="site-header">
+    <header class="site-header" transition:name="site-header" transition:animate="none">
       <div class="site-header__inner shell">
         <a class="site-name" href="/">Dev Journal</a>
         <nav class="site-nav" aria-label="Primary navigation">
@@ -95,11 +95,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
       </div>
     </header>
 
-    <main id="main-content">
+    <main id="main-content" transition:name="main-content">
       <slot />
     </main>
 
-    <footer class="site-footer">
+    <footer class="site-footer" transition:name="site-footer" transition:animate="none">
       <div class="shell site-footer__inner">
         <p>Dev Journal</p>
         <p>Built with Astro.</p>

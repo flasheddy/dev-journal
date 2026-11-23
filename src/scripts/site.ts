@@ -491,19 +491,517 @@ function initProjectFilter(): void {
   applyFilter(activeButton?.dataset.filterTag ?? 'all');
 }
 
+interface SearchIndexItem {
+  kind: 'article' | 'project';
+  title: string;
+  summary: string;
+  url: string;
+  tags: string[];
+  date?: string;
+}
+
+let searchIndexCache: SearchIndexItem[] | null = null;
+let searchIndexPromise: Promise<SearchIndexItem[]> | null = null;
+let commandPaletteController: {
+  open: () => void;
+  close: (restoreFocus?: boolean) => void;
+  isOpen: () => boolean;
+  handleKeydown: (event: KeyboardEvent) => void;
+  destroy: () => void;
+} | null = null;
+
+function isApplePlatform(): boolean {
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  const platform = nav.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent;
+  return /Mac|iPhone|iPad|iPod/i.test(platform);
+}
+
+function formatSearchDate(iso: string): string {
+  const parsed = new Date(`${iso}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.valueOf())) return iso;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(parsed);
+}
+
+function loadSearchIndex(): Promise<SearchIndexItem[]> {
+  if (searchIndexCache) return Promise.resolve(searchIndexCache);
+  if (searchIndexPromise) return searchIndexPromise;
+
+  searchIndexPromise = fetch('/search-index.json')
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Search index request failed (${response.status})`);
+      }
+      const data = (await response.json()) as unknown;
+      if (!Array.isArray(data)) {
+        throw new Error('Search index payload is not an array');
+      }
+      const normalized: SearchIndexItem[] = data
+        .filter((entry): entry is SearchIndexItem => {
+          if (typeof entry !== 'object' || entry === null) return false;
+          const item = entry as Partial<SearchIndexItem>;
+          return (
+            (item.kind === 'article' || item.kind === 'project') &&
+            typeof item.title === 'string' &&
+            typeof item.summary === 'string' &&
+            typeof item.url === 'string' &&
+            Array.isArray(item.tags)
+          );
+        })
+        .map((item) => ({
+          kind: item.kind,
+          title: item.title,
+          summary: item.summary,
+          url: item.url,
+          tags: item.tags.filter((tag): tag is string => typeof tag === 'string'),
+          ...(typeof item.date === 'string' ? { date: item.date } : {}),
+        }));
+      searchIndexCache = normalized;
+      return normalized;
+    })
+    .catch((error) => {
+      searchIndexPromise = null;
+      throw error;
+    });
+
+  return searchIndexPromise;
+}
+
+function rankSearchItems(items: SearchIndexItem[], query: string): SearchIndexItem[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return items;
+
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const scored: Array<{ item: SearchIndexItem; score: number; index: number }> = [];
+
+  items.forEach((item, index) => {
+    const titleLower = item.title.toLowerCase();
+    const summaryLower = item.summary.toLowerCase();
+    const tagsLower = item.tags.map((tag) => tag.toLowerCase());
+    const kindLower = item.kind;
+
+    let score = 0;
+    for (const token of tokens) {
+      let tokenScore = 0;
+      if (titleLower.startsWith(token)) {
+        tokenScore += 34;
+      } else if (titleLower.includes(` ${token}`) || titleLower.includes(`-${token}`)) {
+        tokenScore += 28;
+      } else if (titleLower.includes(token)) {
+        tokenScore += 20;
+      }
+
+      if (tagsLower.some((tag) => tag === token)) {
+        tokenScore += 24;
+      } else if (tagsLower.some((tag) => tag.startsWith(token))) {
+        tokenScore += 18;
+      } else if (tagsLower.some((tag) => tag.includes(token))) {
+        tokenScore += 12;
+      }
+
+      if (summaryLower.includes(token)) {
+        tokenScore += 6;
+      }
+
+      if (kindLower.startsWith(token)) {
+        tokenScore += 5;
+      }
+
+      if (tokenScore === 0) return;
+      score += tokenScore;
+    }
+
+    if (titleLower.startsWith(normalizedQuery)) {
+      score += 120;
+    } else if (titleLower.includes(normalizedQuery)) {
+      score += 80;
+    }
+
+    if (tagsLower.some((tag) => tag === normalizedQuery)) {
+      score += 70;
+    }
+
+    scored.push({ item, score, index });
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored.map((entry) => entry.item);
+}
+
+function cleanupCommandPalette(): void {
+  if (commandPaletteController) {
+    commandPaletteController.destroy();
+    commandPaletteController = null;
+  }
+  root.classList.remove('has-command-palette');
+}
+
+function initCommandPalette(): void {
+  cleanupCommandPalette();
+
+  const kbd = document.querySelector<HTMLElement>('[data-search-kbd]');
+  if (kbd) {
+    kbd.textContent = isApplePlatform() ? '⌘K' : 'Ctrl K';
+  }
+
+  const palette = document.querySelector<HTMLElement>('[data-command-palette]');
+  const input = palette?.querySelector<HTMLInputElement>('[data-command-input]');
+  const resultsList = palette?.querySelector<HTMLUListElement>('[data-command-results]');
+  const statusEl = palette?.querySelector<HTMLElement>('[data-command-status]');
+  const closeButton = palette?.querySelector<HTMLButtonElement>('[data-command-close]');
+  const backdrop = palette?.querySelector<HTMLElement>('[data-command-backdrop]');
+  const trigger = document.querySelector<HTMLButtonElement>('[data-search-trigger]');
+
+  if (!palette || !input || !resultsList || !statusEl) return;
+
+  let openState = false;
+  let activeIndex = -1;
+  let renderedItems: SearchIndexItem[] = [];
+  let previouslyFocused: HTMLElement | null = null;
+  let renderGeneration = 0;
+
+  const setTriggerExpanded = (expanded: boolean): void => {
+    trigger?.setAttribute('aria-expanded', String(expanded));
+  };
+
+  const setStatus = (message: string | null): void => {
+    if (message) {
+      statusEl.textContent = message;
+      statusEl.hidden = false;
+    } else {
+      statusEl.textContent = '';
+      statusEl.hidden = true;
+    }
+  };
+
+  const setSelectedIndex = (nextIndex: number, scrollIntoView: boolean): void => {
+    const options = Array.from(
+      resultsList.querySelectorAll<HTMLLIElement>('[data-command-option]'),
+    );
+    if (options.length === 0) {
+      activeIndex = -1;
+      input.removeAttribute('aria-activedescendant');
+      return;
+    }
+
+    const bounded = ((nextIndex % options.length) + options.length) % options.length;
+    activeIndex = bounded;
+
+    options.forEach((option, index) => {
+      const selected = index === bounded;
+      option.classList.toggle('is-selected', selected);
+      option.setAttribute('aria-selected', String(selected));
+      if (selected) {
+        input.setAttribute('aria-activedescendant', option.id);
+        if (scrollIntoView) {
+          option.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    });
+  };
+
+  const renderResults = (items: SearchIndexItem[], query: string): void => {
+    renderedItems = items;
+    resultsList.replaceChildren();
+
+    if (items.length === 0) {
+      activeIndex = -1;
+      input.removeAttribute('aria-activedescendant');
+      setStatus(
+        query.trim()
+          ? `No matching articles or projects for “${query.trim()}”.`
+          : 'No searchable items available.',
+      );
+      return;
+    }
+
+    setStatus(null);
+    const fragment = document.createDocumentFragment();
+
+    items.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.id = `command-option-${index}`;
+      li.className = 'command-palette__option';
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      li.dataset.commandOption = String(index);
+
+      const isExternal = /^https?:\/\//i.test(item.url);
+      const link = document.createElement('a');
+      link.className = isExternal ? 'command-palette__item external-link' : 'command-palette__item';
+      link.href = item.url;
+      link.tabIndex = -1;
+      if (isExternal) {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+
+      const topRow = document.createElement('div');
+      topRow.className = 'command-palette__item-top';
+
+      const kindBadge = document.createElement('span');
+      kindBadge.className = `command-palette__kind command-palette__kind--${item.kind}`;
+      kindBadge.textContent = item.kind === 'project' ? 'Project' : 'Article';
+      topRow.append(kindBadge);
+
+      const titleEl = document.createElement('span');
+      titleEl.className = 'command-palette__title';
+      titleEl.textContent = item.title;
+      topRow.append(titleEl);
+
+      if (item.date) {
+        const metaEl = document.createElement('span');
+        metaEl.className = 'command-palette__meta';
+        metaEl.textContent = formatSearchDate(item.date);
+        topRow.append(metaEl);
+      } else if (isExternal) {
+        const arrowEl = document.createElement('span');
+        arrowEl.className = 'command-palette__meta';
+        arrowEl.setAttribute('aria-hidden', 'true');
+        arrowEl.textContent = '↗';
+        topRow.append(arrowEl);
+      }
+
+      const summaryEl = document.createElement('p');
+      summaryEl.className = 'command-palette__summary';
+      summaryEl.textContent = item.summary;
+
+      link.append(topRow, summaryEl);
+
+      if (item.tags.length > 0) {
+        const tagsRow = document.createElement('div');
+        tagsRow.className = 'command-palette__tags';
+        item.tags.slice(0, 4).forEach((tag) => {
+          const tagEl = document.createElement('span');
+          tagEl.className = 'command-palette__tag';
+          tagEl.textContent = tag;
+          tagsRow.append(tagEl);
+        });
+        link.append(tagsRow);
+      }
+
+      li.append(link);
+      fragment.append(li);
+    });
+
+    resultsList.append(fragment);
+    setSelectedIndex(0, false);
+  };
+
+  const updateQuery = async (query: string): Promise<void> => {
+    const generation = ++renderGeneration;
+    if (!searchIndexCache) {
+      resultsList.replaceChildren();
+      setStatus('Loading search index…');
+    }
+
+    try {
+      const indexItems = await loadSearchIndex();
+      if (!openState || generation !== renderGeneration) return;
+      const matches = rankSearchItems(indexItems, query);
+      renderResults(matches, query);
+    } catch {
+      if (!openState || generation !== renderGeneration) return;
+      resultsList.replaceChildren();
+      activeIndex = -1;
+      input.removeAttribute('aria-activedescendant');
+      setStatus('Unable to load search index.');
+    }
+  };
+
+  const close = (restoreFocus = true): void => {
+    if (!openState) return;
+    openState = false;
+    renderGeneration += 1;
+    palette.hidden = true;
+    root.classList.remove('has-command-palette');
+    setTriggerExpanded(false);
+    input.value = '';
+    input.removeAttribute('aria-activedescendant');
+    activeIndex = -1;
+
+    if (restoreFocus) {
+      const target =
+        previouslyFocused && previouslyFocused.isConnected ? previouslyFocused : trigger;
+      target?.focus();
+    }
+    previouslyFocused = null;
+  };
+
+  const open = (): void => {
+    if (openState) {
+      input.focus();
+      input.select();
+      return;
+    }
+
+    previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    openState = true;
+    palette.hidden = false;
+    root.classList.add('has-command-palette');
+    setTriggerExpanded(true);
+    input.value = '';
+    input.focus();
+    void updateQuery('');
+  };
+
+  const handleInput = (): void => {
+    void updateQuery(input.value);
+  };
+
+  const handleBackdropClick = (): void => {
+    close(true);
+  };
+
+  const handleCloseClick = (): void => {
+    close(true);
+  };
+
+  const handleResultsMouseMove = (event: MouseEvent): void => {
+    if (!(event.target instanceof Element)) return;
+    const option = event.target.closest<HTMLLIElement>('[data-command-option]');
+    if (!option) return;
+    const index = Number.parseInt(option.dataset.commandOption ?? '', 10);
+    if (Number.isInteger(index) && index !== activeIndex) {
+      setSelectedIndex(index, false);
+    }
+  };
+
+  const handleResultsClick = (event: MouseEvent): void => {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest<HTMLAnchorElement>('a.command-palette__item');
+    if (!link) return;
+    const isExternal = link.target === '_blank';
+    close(isExternal);
+  };
+
+  const handleKeydown = (event: KeyboardEvent): void => {
+    if (!openState) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      close(true);
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (renderedItems.length > 0) {
+        setSelectedIndex(activeIndex + 1, true);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (renderedItems.length > 0) {
+        setSelectedIndex(activeIndex <= 0 ? renderedItems.length - 1 : activeIndex - 1, true);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      const activeOption = resultsList.querySelector<HTMLLIElement>(
+        `[data-command-option="${activeIndex}"]`,
+      );
+      const link = activeOption?.querySelector<HTMLAnchorElement>('a.command-palette__item');
+      if (link) {
+        event.preventDefault();
+        const isExternal = link.target === '_blank';
+        link.click();
+        close(isExternal);
+      }
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      const focusables = [input, closeButton].filter(
+        (el): el is HTMLInputElement | HTMLButtonElement => Boolean(el),
+      );
+      if (focusables.length < 2) {
+        event.preventDefault();
+        input.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  };
+
+  input.addEventListener('input', handleInput);
+  backdrop?.addEventListener('click', handleBackdropClick);
+  closeButton?.addEventListener('click', handleCloseClick);
+  resultsList.addEventListener('mousemove', handleResultsMouseMove);
+  resultsList.addEventListener('click', handleResultsClick);
+
+  commandPaletteController = {
+    open,
+    close,
+    isOpen: () => openState,
+    handleKeydown,
+    destroy: () => {
+      close(false);
+      input.removeEventListener('input', handleInput);
+      backdrop?.removeEventListener('click', handleBackdropClick);
+      closeButton?.removeEventListener('click', handleCloseClick);
+      resultsList.removeEventListener('mousemove', handleResultsMouseMove);
+      resultsList.removeEventListener('click', handleResultsClick);
+    },
+  };
+}
+
 function setup(): void {
   renderThemeControl();
   enhanceCodeBlocks();
   enhanceHeadingAnchors();
   syncTopicFilterFromUrl();
   initProjectFilter();
+  initCommandPalette();
   initReadingProgress();
   initTocScrollSpy();
 }
 
 document.addEventListener('click', (event) => {
-  if (event.target instanceof Element && event.target.closest('[data-theme-toggle]')) {
+  if (!(event.target instanceof Element)) return;
+  if (event.target.closest('[data-theme-toggle]')) {
     toggleTheme();
+    return;
+  }
+  if (event.target.closest('[data-search-trigger]')) {
+    commandPaletteController?.open();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (
+    (event.metaKey || event.ctrlKey) &&
+    !event.altKey &&
+    !event.shiftKey &&
+    event.key.toLowerCase() === 'k'
+  ) {
+    event.preventDefault();
+    if (commandPaletteController?.isOpen()) {
+      commandPaletteController.close(true);
+    } else {
+      commandPaletteController?.open();
+    }
+    return;
+  }
+
+  if (commandPaletteController?.isOpen()) {
+    commandPaletteController.handleKeydown(event);
   }
 });
 
@@ -512,6 +1010,7 @@ window.addEventListener('popstate', syncTopicFilterFromUrl);
 // ClientRouter replaces the body without re-running this bundled module. Clean up
 // page-scoped observers/listeners and apply theme before the DOM swap, then rebuild controls.
 document.addEventListener('astro:before-swap', (event) => {
+  cleanupCommandPalette();
   cleanupReadingProgress();
   cleanupTocScrollSpy();
   const swapEvent = event as Event & { newDocument?: Document };

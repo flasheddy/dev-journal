@@ -70,6 +70,32 @@ const isNavActive = (href: string) =>
             })
           }
           <button
+            class="search-trigger"
+            type="button"
+            data-search-trigger
+            aria-label="Search articles and projects"
+            aria-keyshortcuts="Control+K Meta+K"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="command-palette"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-3.5-3.5"></path>
+            </svg>
+            <kbd class="search-trigger__kbd" data-search-kbd>⌘K</kbd>
+          </button>
+          <button
             class="icon-button theme-toggle"
             type="button"
             data-theme-toggle
@@ -121,6 +147,83 @@ const isNavActive = (href: string) =>
         <p>Built with Astro.</p>
       </div>
     </footer>
+    <div
+      id="command-palette"
+      class="command-palette"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="command-palette-label"
+      data-command-palette
+      hidden
+    >
+      <div class="command-palette__backdrop" data-command-backdrop></div>
+      <div class="command-palette__panel" role="document">
+        <div class="command-palette__header">
+          <svg
+            class="command-palette__icon"
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.5-3.5"></path>
+          </svg>
+          <label id="command-palette-label" class="sr-only" for="command-palette-input">
+            Search articles and projects
+          </label>
+          <input
+            id="command-palette-input"
+            class="command-palette__input"
+            type="search"
+            placeholder="Search articles, projects, and topics…"
+            autocomplete="off"
+            spellcheck="false"
+            role="combobox"
+            aria-expanded="true"
+            aria-autocomplete="list"
+            aria-controls="command-palette-results"
+            data-command-input
+          />
+          <button
+            type="button"
+            class="command-palette__esc"
+            data-command-close
+            aria-label="Close search"
+          >
+            Esc
+          </button>
+        </div>
+        <div class="command-palette__body">
+          <p
+            class="command-palette__status"
+            data-command-status
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+          </p>
+          <ul
+            id="command-palette-results"
+            class="command-palette__results"
+            role="listbox"
+            aria-label="Search results"
+            data-command-results
+          >
+          </ul>
+        </div>
+        <div class="command-palette__footer" aria-hidden="true">
+          <span class="command-palette__hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+          <span class="command-palette__hint"><kbd>↵</kbd> Open</span>
+          <span class="command-palette__hint"><kbd>Esc</kbd> Close</span>
+        </div>
+      </div>
+    </div>
     <div class="sr-only" aria-live="polite" aria-atomic="true" data-copy-status></div>
     <script>
       import '../scripts/site';

@@ -2,7 +2,7 @@
 
 This document defines how an engineering note becomes an article in Dev
 Journal. It keeps the writing process evidence-bounded and makes the checks
-required before a change reaches the Zola site explicit.
+required before a change reaches the Astro site explicit.
 
 ## Article status
 
@@ -50,17 +50,17 @@ synthetic examples and redact credentials, personal data, and private logs.
    paths, logs, or data.
 5. **Attach evidence.** Include the exact local command, the relevant result,
    and environment assumptions. Distinguish `locally passing`, `remotely
-verified`, and `independently explained` evidence.
+   verified`, and `independently explained` evidence.
 6. **State limitations and next work.** Leave unresolved questions open and
    identify the next experiment rather than implying completion.
 
-## Zola article format
+## Astro article format
 
-Create an article under `content/blog/` with the established TOML front
-matter. Dates use ISO year-month-day values; tags use the configured `tags`
-taxonomy. The `description` is the short summary used by article lists and
-metadata. An optional top-level `updated` date records a meaningful revision
-date alongside the required `date`.
+Create an article under `src/content/blog/` with the established TOML front
+matter. Dates use ISO year-month-day values; tags use the `tags` array inside
+the `[taxonomies]` table. The `description` is the short summary used by article
+lists and metadata. An optional top-level `updated` date records a meaningful
+revision date alongside the required `date`.
 
 ```toml
 +++
@@ -69,22 +69,24 @@ date = 2026-09-26
 updated = 2026-11-07       # Optional ISO 8601 date (YYYY-MM-DD)
 description = "A short summary used by article lists and metadata."
 [taxonomies]
-tags = ["Playwright", "Bun", "CSS", "Zola"]
+tags = ["Playwright", "Bun", "CSS", "Astro"]
 +++
 ```
 
 The `updated` key is optional and must be top-level, never nested inside
-`[extra]` or `[taxonomies]`. Its rendering behavior and edge cases are enforced
-by `verify.fish` and recorded in the feature spec index at
+`[taxonomies]`. Its rendering behavior and edge cases are enforced by
+`scripts/check.ts` and recorded in the feature spec index at
 [`docs/specs/`](specs/index.md).
 
-The blog section orders articles by `date`, and the page template supplies the
-article date, reading time, and tag links. Use Zola URL helpers for internal
-links; do not introduce root-relative asset or navigation URLs. Keep Markdown
-headings and code fences consistent with existing articles. The repository targets
-the host system Zola and requires 0.23 or later for component syntax; a local
-executable that lacks component support must be reported rather than silently
-treated as equivalent.
+Articles are ordered by `date` in `src/lib/posts.ts`, and the article route
+supplies the date, reading time, and tag links. Use site paths such as
+`/blog/dual-harness-engineering/` for internal links; do not use legacy
+`@/blog/...` link syntax. Keep Markdown headings and code fences consistent with
+existing articles. The schema in `src/content.config.ts` requires a title, ISO
+date, description, and a tags array, and validates every build.
+
+Project cards live in `src/content/projects/` and use `title`, `description`,
+`tech`, `url`, and `order`. The homepage renders them in ascending `order`.
 
 ## Review and approval gates
 
@@ -96,8 +98,9 @@ Before calling an article `locally validated`, a reviewer checks:
 - the article does not expose secrets, personal information, private logs, or
   unapproved remote results;
 - the diff changes only the intended article or documentation and preserves
-  existing templates, configuration, workflow, and tests;
-- the local build, site contract, and visual rendering checks all pass.
+  existing layouts, configuration, workflow, and tests;
+- the local build, source contract, built-site contract, and visual rendering
+  checks all pass.
 
 Drafting and local validation are read-only editorial activities. Before
 writing a final article, committing, pushing, submitting, or publishing,
@@ -116,19 +119,35 @@ just check
 just visual
 ```
 
-- `just check` executes the canonical verification pipeline: required tools and
-  contract files (`preflight`), Markdown/fish/TOML/JS/CSS checks, typos, justfile
-  format, and Git diff whitespace (`lint`), secret scanning (`secrets`), site
-  export (`zola build`), template/style invariants (`./verify.fish`), and
-  internal link integrity (`zola check`).
+- `bun --bun run check` is the shared source gate: `astro check` validates the
+  TypeScript and Astro components, and `scripts/check.ts` validates the TOML
+  schemas, required files, internal links, contract markers, lockfiles, and
+  secret material.
+- `bun --bun run build` writes the static site to `dist/`.
+- `bun --bun run check:built` validates generated routes, internal links and assets,
+  page metadata, feed cards, and Catppuccin code-block output.
+- `just check` is the canonical local gate over `preflight`, `lint` (including
+  `bun --bun run check`), `secrets`, and `site` (build plus built checks).
 - `just fmt` may change existing blog posts only for autofixable Markdown lint
-  errors; review the diff and do not rewrite article prose.
+  errors; review the diff and do not rewrite article prose. It does not format
+  `.astro` components: the Minimal Astro policy keeps local Helix auto-format
+  off and leaves correctness to `astro check`, which runs inside
+  `bun --bun run check` and `just check`.
 - `just visual` runs the decoupled Playwright harness (Bun + system Chromium at
-  `/usr/bin/chromium`; install dependencies once via `bun install`) and writes
-  full-page screenshots to `.visual/screenshots/`; inspect them to confirm new
-  content renders without overflow or console errors.
+  `/usr/bin/chromium`; set `CHROMIUM_PATH` to override a broken host package,
+  and install dependencies once via `bun install`) and writes full-page
+  screenshots to `.visual/screenshots/`; inspect them to confirm new content
+  renders without overflow or console errors.
 - Review `git status --short --branch` to confirm that no unrelated files
   changed.
+
+Google AI Studio and CI use the package scripts instead of `just`:
+
+```fish
+npm install
+npm run check
+npm run build
+```
 
 ## Editorial record
 

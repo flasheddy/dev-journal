@@ -1,10 +1,25 @@
-/public/
-.DS_Store
-*.swp
-*.swo
+# Astro build output and generated types
+dist/
+.astro/
 
-# Visual verification harness (decoupled; see verify-visual.fish)
+# Dependencies
 node_modules/
+
+# Local visual verification harness
 .visual/
 test-results/
 playwright-report/
+
+# AI Studio may install with npm; Bun's lockfile is canonical.
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Local and editor noise
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+*.swp
+*.swo

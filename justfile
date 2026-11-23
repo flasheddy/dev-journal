@@ -10,10 +10,13 @@ alias f := fmt
 [group("gate")]
 default: check
 
-# Fast parallel verification gate (preflight, lint, secrets, site).
+# Fast verification gate: preflight first, then lint, secrets, and site in parallel.
 [group("gate")]
+check-fast: preflight _check-fast
+
+# Parallel verification set; only runs after preflight succeeds.
 [parallel]
-check-fast: preflight lint secrets site
+_check-fast: lint secrets site
 
 # Full canonical verification gate.
 [group("gate")]
@@ -25,13 +28,13 @@ preflight:
     #!/usr/bin/env fish
     cd $JUST_ROOT
     set -l failed 0
-    for tool in bun fish git just rg rumdl taplo typos zola
+    for tool in bun fish git just rg rumdl taplo typos
         if not command -v $tool >/dev/null
             echo "FAIL: missing required tool '$tool'" >&2
             set failed 1
         end
     end
-    for req in AGENTS.md README.md config.toml .rumdl.toml
+    for req in AGENTS.md README.md package.json astro.config.mjs src/content.config.ts justfile
         if not test -f $req
             echo "FAIL: missing required contract file '$req'" >&2
             set failed 1
@@ -43,7 +46,9 @@ preflight:
     end
     echo "preflight: tools and contract files ok"
 
-# Auto-format Fish scripts, TOML configs, JavaScript, CSS, Markdown, and justfile.
+# Minimal Astro policy: no .astro formatter. Local Helix keeps auto-format off,
+# and `astro check` validates components; do not add Prettier to this loop.
+# Auto-format Fish scripts, TOML configs, JavaScript/TypeScript, CSS, Markdown, and justfile.
 [group("toolchain")]
 fmt:
     #!/usr/bin/env fish
@@ -60,17 +65,19 @@ fmt:
     if test (count $tomls) -gt 0
         env RUST_LOG=warn taplo format $tomls; or set failed 1
     end
-    set -l js_css
-    for j in (git ls-files "*.js")
-        test -f $j; and set -a js_css $j
+    set -l web
+    for ext in js mjs cjs ts css
+        for f in (git ls-files "*.$ext")
+            test -f $f; and set -a web $f
+        end
     end
-    for c in (git ls-files "*.css")
-        test -f $c; and set -a js_css $c
+    if test (count $web) -gt 0
+        bun fmt $web; or set failed 1
     end
-    if test (count $js_css) -gt 0
-        bun fmt $js_css; or set failed 1
+    set -l mds
+    for m in (git ls-files "*.md")
+        test -f $m; and set -a mds $m
     end
-    set -l mds (git ls-files "*.md")
     if test (count $mds) -gt 0
         rumdl fmt $mds; or set failed 1
     end
@@ -79,24 +86,18 @@ fmt:
         echo "VERIFY FAILED: fmt" >&2
         exit 1
     end
-    echo "fmt: formatted fish scripts, toml, javascript, css, markdown, and justfile"
+    echo "fmt: formatted fish, toml, js/ts, css, markdown, and justfile"
 
-# Static and structural lint: markdown, fish, TOML, JS/CSS, typos, justfile, whitespace.
+# Mirrors `fmt`: every formatter above has a matching check here.
+# Static and structural lint plus the shared Astro/source contract.
 [group("verify")]
 lint:
     #!/usr/bin/env fish
     cd $JUST_ROOT
     set -l failed 0
     for rogue in package-lock.json pnpm-lock.yaml yarn.lock
-        if test -f $rogue
-            echo "FAIL: rogue lockfile detected: $rogue (use bun.lock exclusively)" >&2
-            set failed 1
-        end
-    end
-    set -l mds (git ls-files "*.md")
-    if test (count $mds) -gt 0
-        rumdl fmt --check $mds >/dev/null; or begin
-            echo "FAIL: tracked markdown files are not rumdl-clean; run 'just fmt'" >&2
+        if git ls-files --error-unmatch $rogue >/dev/null 2>&1
+            echo "FAIL: tracked non-Bun lockfile: $rogue (use bun.lock exclusively)" >&2
             set failed 1
         end
     end
@@ -118,43 +119,41 @@ lint:
     if test (count $tomls) -gt 0
         env RUST_LOG=warn taplo format --check $tomls; or set failed 1
     end
-    set -l jss
-    for j in (git ls-files "*.js")
-        test -f $j; or continue
-        if not bun build --no-bundle $j >/dev/null 2>&1
-            echo "FAIL: $j (syntax check)" >&2
-            set failed 1
+    set -l web
+    for ext in js mjs cjs ts css
+        for f in (git ls-files "*.$ext")
+            test -f $f; and set -a web $f
         end
-        set -a jss $j
     end
-    if test (count $jss) -gt 0
-        bun fmt --check $jss >/dev/null 2>&1; or begin
-            echo "FAIL: javascript files are not formatted; run 'just fmt'" >&2
+    if test (count $web) -gt 0
+        bun fmt --check $web >/dev/null 2>&1; or begin
+            echo "FAIL: javascript/typescript/css files are not formatted; run 'just fmt'" >&2
             set failed 1
         end
     end
-    set -l csss
-    for c in (git ls-files "*.css")
-        test -f $c; and set -a csss $c
+    set -l mds
+    for m in (git ls-files "*.md")
+        test -f $m; and set -a mds $m
     end
-    if test (count $csss) -gt 0
-        bun fmt --check $csss >/dev/null 2>&1; or begin
-            echo "FAIL: css files are not formatted; run 'just fmt'" >&2
+    if test (count $mds) -gt 0
+        rumdl fmt --check $mds >/dev/null; or begin
+            echo "FAIL: tracked markdown files are not rumdl-clean; run 'just fmt'" >&2
             set failed 1
         end
     end
-    typos; or set failed 1
     if not just --fmt --check >/dev/null 2>&1
         echo "FAIL: justfile is not formatted; run 'just --fmt' or 'just fmt'" >&2
         set failed 1
     end
+    typos; or set failed 1
     git diff --check; or set failed 1
     git diff --cached --check; or set failed 1
+    bun --bun run check; or set failed 1
     if test $failed -ne 0
         echo "VERIFY FAILED: lint" >&2
         exit 1
     end
-    echo "lint: markdown, fish syntax/format, toml, js, css, typos, justfile, whitespace"
+    echo "lint: fish, toml, js/ts, css, markdown, justfile, typos, lockfiles, whitespace, astro contract"
 
 # Secret scan (gitleaks, fail-closed rg fallback).
 [group("verify")]
@@ -175,39 +174,75 @@ secrets:
         exit 1
     end
 
-    if git ls-files -z | xargs -0 -r rg -l -- '-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----'
+    set -l tracked
+    for f in (git ls-files)
+        test -f $f; and set -a tracked $f
+    end
+    if test (count $tracked) -eq 0
+        echo "secrets: no tracked files to scan; refusing to pass" >&2
+        exit 1
+    end
+    if printf '%s\n' $tracked | xargs -r rg -l -- '-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----'
         echo "secrets: private-key material found in tracked files." >&2
         exit 1
     end
-    if git ls-files -z | xargs -0 -r rg -l -i -E '(password|passwd|secret|api[-_]?key|access[-_]?key|client[-_]?secret|auth[-_]?token)[[:space:]]*[:=][[:space:]]*[^[:space:]]{8,}'
+    if printf '%s\n' $tracked | xargs -r rg -l -i -E '(password|passwd|secret|api[-_]?key|access[-_]?key|client[-_]?secret|auth[-_]?token)[[:space:]]*[:=][[:space:]]*[^[:space:]]{8,}'
         echo "secrets: credential-shaped string found in tracked files." >&2
         exit 1
     end
-    if git ls-files | rg -i '(^|/)(id_(rsa|ed25519|ecdsa|dsa)|[^/]*\.(pem|key|ppk|p12|pfx))$'
+    if printf '%s\n' $tracked | rg -i '(^|/)(id_(rsa|ed25519|ecdsa|dsa)|[^/]*\.(pem|key|ppk|p12|pfx))$'
         echo "secrets: private-key filename tracked." >&2
         exit 1
     end
     echo "secrets: no secret material detected"
 
-# Run local preview server with live reload.
+# Run the Astro development server with live reload.
 [group("site")]
 serve *args:
-    cd $JUST_ROOT && zola serve {{ args }}
+    #!/usr/bin/env fish
+    cd $JUST_ROOT
+    if test (count $args) -gt 0
+        bun --bun run dev -- $args
+    else
+        bun --bun run dev
+    end
 
-# Build Zola site to public/ directory.
+# Build the static Astro site into dist/.
 [group("site")]
 build:
-    cd $JUST_ROOT && zola build
+    cd $JUST_ROOT && bun --bun run build
 
-# Full site gate: build, verify invariants, and validate internal links.
+# Full site gate: build, then verify generated routes, links, and contracts.
 [group("site")]
 site: build
     #!/usr/bin/env fish
     cd $JUST_ROOT
-    ./verify.fish
-    zola check --skip-external-links
+    bun --bun run check:built
 
 # Decoupled visual verification harness (Playwright + Bun + system Chromium).
 [group("site")]
 visual:
-    cd $JUST_ROOT && ./verify-visual.fish
+    #!/usr/bin/env fish
+    cd $JUST_ROOT
+    if not command -v bun >/dev/null 2>&1
+        echo "FAIL: missing required tool: bun" >&2
+        exit 1
+    end
+    set -l chromium_bin "$CHROMIUM_PATH"
+    if test -z "$chromium_bin"
+        set chromium_bin chromium
+    end
+    if not test -x "$chromium_bin"; and not command -v $chromium_bin >/dev/null 2>&1
+        echo "FAIL: missing Chromium at '$chromium_bin' (set CHROMIUM_PATH to override)" >&2
+        exit 1
+    end
+    if not test -f node_modules/.bin/playwright
+        echo "FAIL: Playwright not installed. Run: bun install" >&2
+        exit 1
+    end
+    bun --bun run test:visual
+    set -l rc $status
+    if test $rc -eq 0
+        printf '\nScreenshots: .visual/screenshots/\nHTML report: .visual/report/index.html\n'
+    end
+    exit $rc

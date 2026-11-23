@@ -1,3 +1,11 @@
+# Minimal Astro policy: components are not auto-formatted. No repository Astro
+# formatter is configured; `astro check` is the correctness gate. The global
+# Helix config already provides astro-ls, so do not redefine the server here.
+[[language]]
+name = "astro"
+auto-format = false
+roots = ["astro.config.mjs", "astro.config.ts", "package.json", ".git"]
+
 [[language]]
 name = "html"
 auto-format = false

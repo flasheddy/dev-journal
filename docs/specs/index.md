@@ -11,9 +11,11 @@ status label inside a spec reflects when it was written.
 
 ## Authority
 
-`verify.fish` is the executable contract for the invariants these specs
-describe, and `AGENTS.md` holds the binding architecture and safety rules. If a
-spec contradicts either, the executable contract wins and the spec is stale.
+`scripts/check.ts` is the executable source and built-site contract for the
+invariants these specs describe, and `AGENTS.md` holds the binding architecture
+and safety rules. If a spec contradicts either, the executable contract wins
+and the spec is stale. The previous `verify.fish` and template references were
+removed with the Astro migration; Git history preserves them.
 
 Authoring and validation process lives in
 [`docs/editorial-workflow.md`](../editorial-workflow.md).

@@ -6,6 +6,7 @@ import { getPosts, getProjects } from '../lib/posts';
 import { site } from '../lib/site';
 
 const posts = await getPosts();
+const latestPosts = posts.slice(0, 3);
 const projects = await getProjects();
 ---
 
@@ -40,12 +41,21 @@ const projects = await getProjects();
     </div>
     <div class="post-list">
       {
-        posts.length > 0 ? (
-          posts.map((post) => <PostItem post={post} />)
+        latestPosts.length > 0 ? (
+          latestPosts.map((post) => <PostItem post={post} />)
         ) : (
           <p class="empty-state">No articles yet. The first field note is on its way.</p>
         )
       }
     </div>
+    {
+      posts.length > 0 && (
+        <div class="article-feed__footer">
+          <a class="feed-more-link" href="/blog/">
+            View all posts <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      )
+    }
   </section>
 </BaseLayout>

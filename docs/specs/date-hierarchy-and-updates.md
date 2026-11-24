@@ -133,11 +133,10 @@ published content file changes its URL and requires operator direction.
 
 ### 3.1 Shared source gate
 
-Run one of:
+Run:
 
 ```fish
-bun --bun run check
-npm run check
+bun run check
 ```
 
 `astro check` validates the Astro and TypeScript sources. Then
@@ -154,10 +153,10 @@ npm run check
 
 ### 3.2 Built-site gate
 
-After `bun --bun run build`, run:
+After `bun run build`, run:
 
 ```fish
-bun --bun run check:built
+bun run check:built
 ```
 
 `scripts/check.ts --built` validates the generated `dist/` tree, including:
@@ -181,7 +180,7 @@ bun --bun run check:built
 just check
 ```
 
-This runs `preflight`, `lint` (including `bun --bun run check`), `secrets`, and
+This runs `preflight`, `lint` (including `bun run check`), `secrets`, and
 `site` (build plus `check:built`). `just check-fast` runs `preflight` first,
 then runs `lint`, `secrets`, and `site` in parallel.
 
@@ -212,9 +211,9 @@ GitHub Actions runs:
 
 ```fish
 bun install --frozen-lockfile
-bun --bun run check
-bun --bun run build
-bun --bun run check:built
+bun run check
+bun run build
+bun run check:built
 ```
 
 CI does not run `just` or a browser-based visual gate.

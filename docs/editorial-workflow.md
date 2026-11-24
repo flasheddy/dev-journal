@@ -119,20 +119,20 @@ just check
 just visual
 ```
 
-- `bun --bun run check` is the shared source gate: `astro check` validates the
+- `bun run check` is the shared source gate: `astro check` validates the
   TypeScript and Astro components, and `scripts/check.ts` validates the TOML
   schemas, required files, internal links, contract markers, lockfiles, and
   secret material.
-- `bun --bun run build` writes the static site to `dist/`.
-- `bun --bun run check:built` validates generated routes, internal links and assets,
+- `bun run build` writes the static site to `dist/`.
+- `bun run check:built` validates generated routes, internal links and assets,
   page metadata, feed cards, and Catppuccin code-block output.
 - `just check` is the canonical local gate over `preflight`, `lint` (including
-  `bun --bun run check`), `secrets`, and `site` (build plus built checks).
+  `bun run check`), `secrets`, and `site` (build plus built checks).
 - `just fmt` may change existing blog posts only for autofixable Markdown lint
   errors; review the diff and do not rewrite article prose. It does not format
   `.astro` components: the Minimal Astro policy keeps local Helix auto-format
   off and leaves correctness to `astro check`, which runs inside
-  `bun --bun run check` and `just check`.
+  `bun run check` and `just check`.
 - `just visual` runs the decoupled Playwright harness (Bun + system Chromium at
   `/usr/bin/chromium`; set `CHROMIUM_PATH` to override a broken host package,
   and install dependencies once via `bun install`) and writes full-page
@@ -141,12 +141,11 @@ just visual
 - Review `git status --short --branch` to confirm that no unrelated files
   changed.
 
-Google AI Studio and CI use the package scripts instead of `just`:
+CI uses the package scripts instead of `just`:
 
 ```fish
-npm install
-npm run check
-npm run build
+bun run check
+bun run build
 ```
 
 ## Editorial record

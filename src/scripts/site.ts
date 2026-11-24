@@ -951,12 +951,6 @@ function initCommandPalette(): void {
   const handleKeydown = (event: KeyboardEvent): void => {
     if (!openState) return;
 
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      close(true);
-      return;
-    }
-
     const optionCount = resultsList.querySelectorAll('[data-command-option]').length;
 
     if (event.key === 'ArrowDown') {
@@ -1596,12 +1590,6 @@ function initAskJournal(): void {
   const handleKeydown = (event: KeyboardEvent): void => {
     if (!openState) return;
 
-    if (event.key === 'Escape' || event.code === 'Escape') {
-      event.preventDefault();
-      close(true);
-      return;
-    }
-
     if (event.key === 'Tab') {
       const focusables = getFocusableElements();
       if (focusables.length === 0) {
@@ -1643,6 +1631,7 @@ function initAskJournal(): void {
 }
 
 function setup(): void {
+  initGlobalKeyboard();
   renderThemeControl();
   enhanceCodeBlocks();
   enhanceHeadingAnchors();
@@ -1669,9 +1658,19 @@ document.addEventListener('click', (event) => {
   }
 });
 
-document.addEventListener(
-  'keydown',
-  (event) => {
+let stopGlobalKeyboard: (() => void) | null = null;
+
+function cleanupGlobalKeyboard(): void {
+  if (stopGlobalKeyboard) {
+    stopGlobalKeyboard();
+    stopGlobalKeyboard = null;
+  }
+}
+
+function initGlobalKeyboard(): void {
+  cleanupGlobalKeyboard();
+
+  const handleKeydown = (event: KeyboardEvent): void => {
     if (
       (event.metaKey || event.ctrlKey) &&
       !event.altKey &&
@@ -1687,12 +1686,20 @@ document.addEventListener(
       return;
     }
 
-    if (askJournalController?.isOpen()) {
-      if (event.key === 'Escape' || event.code === 'Escape') {
+    if (event.key === 'Escape' || event.code === 'Escape') {
+      if (askJournalController?.isOpen()) {
         event.preventDefault();
         askJournalController.close(true);
         return;
       }
+      if (commandPaletteController?.isOpen()) {
+        event.preventDefault();
+        commandPaletteController.close(true);
+        return;
+      }
+    }
+
+    if (askJournalController?.isOpen()) {
       askJournalController.handleKeydown(event);
       return;
     }
@@ -1700,15 +1707,20 @@ document.addEventListener(
     if (commandPaletteController?.isOpen()) {
       commandPaletteController.handleKeydown(event);
     }
-  },
-  true,
-);
+  };
+
+  document.addEventListener('keydown', handleKeydown, true);
+  stopGlobalKeyboard = () => {
+    document.removeEventListener('keydown', handleKeydown, true);
+  };
+}
 
 window.addEventListener('popstate', syncTopicFilterFromUrl);
 
 // ClientRouter replaces the body without re-running this bundled module. Clean up
 // page-scoped observers/listeners and apply theme before the DOM swap, then rebuild controls.
 document.addEventListener('astro:before-swap', (event) => {
+  cleanupGlobalKeyboard();
   cleanupCommandPalette();
   cleanupAskJournal();
   cleanupReadingProgress();

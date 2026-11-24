@@ -1957,6 +1957,10 @@ html.has-ask-modal {
   padding: clamp(2.75rem, 9vh, 5.5rem) 1rem 1.5rem;
 }
 
+.ask-modal[hidden] {
+  display: none !important;
+}
+
 .ask-modal__backdrop {
   position: fixed;
   inset: 0;

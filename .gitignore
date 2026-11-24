@@ -10,7 +10,7 @@ node_modules/
 test-results/
 playwright-report/
 
-# AI Studio may install with npm; Bun's lockfile is canonical.
+# Bun's lockfile is canonical; ignore other package-manager lockfiles.
 package-lock.json
 pnpm-lock.yaml
 yarn.lock

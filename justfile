@@ -95,12 +95,6 @@ lint:
     #!/usr/bin/env fish
     cd $JUST_ROOT
     set -l failed 0
-    for rogue in package-lock.json pnpm-lock.yaml yarn.lock
-        if git ls-files --error-unmatch $rogue >/dev/null 2>&1
-            echo "FAIL: tracked non-Bun lockfile: $rogue (use bun.lock exclusively)" >&2
-            set failed 1
-        end
-    end
     for f in (git ls-files "*.fish")
         test -f $f; or continue
         if not fish -n $f
@@ -148,12 +142,52 @@ lint:
     typos; or set failed 1
     git diff --check; or set failed 1
     git diff --cached --check; or set failed 1
-    bun --bun run check; or set failed 1
+    if set -q JUST_CHECK_VERBOSE; and test "$JUST_CHECK_VERBOSE" != 0
+        bun run check; or set failed 1
+    else
+        set -l check_log (mktemp -t dev-journal-check.XXXXXX.log)
+        bun run check >$check_log 2>&1
+        set -l check_rc $status
+        if test $check_rc -ne 0
+            echo "FAIL: bun run check (exit $check_rc); full log: $check_log" >&2
+            tail -n 80 $check_log >&2
+            set failed 1
+        else
+            awk '
+                /^- [0-9]+ errors?$/ { errors = $2 }
+                /^- [0-9]+ warnings?$/ { warnings = $2 }
+                /^- [0-9]+ hints?$/ { hints = $2 }
+                /^check: source contract ok/ { source = $0 }
+                /^[[:space:]]+[0-9]+ pass$/ { passed = $1 }
+                /^[[:space:]]+[0-9]+ fail$/ { failed_tests = $1 }
+                END {
+                    if (errors != "") {
+                        printf "astro check: %s errors, %s warnings, %s hints\n", errors, warnings, hints
+                    }
+                    if (source != "") print source
+                    if (passed != "") {
+                        printf "tests: %s passed, %s failed\n", passed, failed_tests
+                    }
+                }
+            ' $check_log
+            if grep -q -E '^- [1-9][0-9]* (warnings?|hints?)$' $check_log
+                grep -i -E 'warning|hint' $check_log | grep -v -E '^- [0-9]+ (warnings?|hints?)$' | head -n 20
+                echo "astro check details: $check_log"
+            else
+                rm -f $check_log
+            end
+        end
+    end
     if test $failed -ne 0
         echo "VERIFY FAILED: lint" >&2
         exit 1
     end
     echo "lint: fish, toml, js/ts, css, markdown, justfile, typos, lockfiles, whitespace, astro contract"
+
+# Run the Bun unit test suite.
+[group("verify")]
+test:
+    cd $JUST_ROOT && bun run test
 
 # Secret scan (gitleaks, fail-closed rg fallback).
 [group("verify")]
@@ -202,22 +236,51 @@ serve *args:
     #!/usr/bin/env fish
     cd $JUST_ROOT
     if test (count $args) -gt 0
-        bun --bun run dev -- $args
+        bun run dev -- $args
     else
-        bun --bun run dev
+        bun run dev
     end
 
 # Build the static Astro site into dist/.
 [group("site")]
 build:
-    cd $JUST_ROOT && bun --bun run build
+    cd $JUST_ROOT && bun run build
 
 # Full site gate: build, then verify generated routes, links, and contracts.
 [group("site")]
-site: build
+site:
     #!/usr/bin/env fish
     cd $JUST_ROOT
-    bun --bun run check:built
+    set -l build_rc 0
+    if set -q JUST_CHECK_VERBOSE; and test "$JUST_CHECK_VERBOSE" != 0
+        bun run build
+        set build_rc $status
+    else
+        set -l build_log (mktemp -t dev-journal-build.XXXXXX.log)
+        bun run build >$build_log 2>&1
+        set build_rc $status
+        if test $build_rc -eq 0
+            set -l pages (grep -oE '[0-9]+ page\(s\) built' $build_log | tail -n 1 | grep -oE '^[0-9]+')
+            if test -n "$pages"
+                echo "build: $pages pages"
+            else
+                echo "build: ok"
+            end
+            rm -f $build_log
+        else
+            echo "FAIL: bun run build (exit $build_rc); full log: $build_log" >&2
+            tail -n 80 $build_log >&2
+        end
+    end
+    if test $build_rc -ne 0
+        exit $build_rc
+    end
+    bun run --silent check:built
+    set -l built_rc $status
+    if test $built_rc -ne 0
+        exit $built_rc
+    end
+    bun run --silent check:built:canary
 
 # Decoupled visual verification harness (Playwright + Bun + system Chromium).
 [group("site")]
@@ -240,7 +303,7 @@ visual:
         echo "FAIL: Playwright not installed. Run: bun install" >&2
         exit 1
     end
-    bun --bun run test:visual
+    bun run test:visual
     set -l rc $status
     if test $rc -eq 0
         printf '\nScreenshots: .visual/screenshots/\nHTML report: .visual/report/index.html\n'

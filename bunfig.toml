@@ -1,3 +1,7 @@
+[run]
+# Execute Node-shebang CLIs such as Astro and Playwright with Bun.
+bun = true
+
 [fmt]
 printWidth = 100
 singleQuote = true

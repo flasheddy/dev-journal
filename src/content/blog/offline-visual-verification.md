@@ -25,7 +25,7 @@ The visual harness is not wired into that path. It needs Bun and system Chromium
 
 ## Bun plus the system Chromium
 
-Bun manages the harness dependency, `@playwright/test`, through a committed `bun.lock`; npm's package lock is disabled by `.npmrc`. The Playwright config then points the launcher at the host's Chromium instead of downloading one:
+Bun manages the harness dependency, `@playwright/test`, through a committed `bun.lock`. The Playwright config then points the launcher at the host's Chromium instead of downloading one:
 
 ```js
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium';

@@ -6,6 +6,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: '**/unit/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -33,7 +34,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `PORT=${PORT} bun --bun run dev`,
+    // Keep the dev server in the foreground; Astro 7 may otherwise background it
+    // when Playwright launches it from an agent environment.
+    command: `PORT=${PORT} bun run dev --ignore-lock`,
     url: BASE,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

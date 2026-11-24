@@ -231,7 +231,7 @@ let fontPromise: Promise<Buffer> | undefined;
 
 function loadFont(): Promise<Buffer> {
   // Astro's build and dev commands run from the project root. Keeping the font
-  // in-repo makes local, CI, and AI Studio builds produce identical cards.
+  // in-repo makes local and CI builds produce identical cards.
   fontPromise ??= readFile(resolve(process.cwd(), 'src/assets/fonts/InterVariable.ttf'));
   return fontPromise;
 }

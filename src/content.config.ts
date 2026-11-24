@@ -13,7 +13,10 @@ const blog = defineCollection({
       description: z.string().min(1),
       taxonomies: z
         .object({
-          tags: z.array(z.string().min(1)).default([]),
+          tags: z
+            .array(z.string().min(1))
+            .default([])
+            .refine((tags) => new Set(tags).size === tags.length, 'tags must be unique'),
         })
         .default({ tags: [] }),
     })
@@ -29,8 +32,8 @@ const projects = defineCollection({
     title: z.string().min(1),
     description: z.string().min(1),
     tech: z.array(z.string().min(1)).default([]),
-    url: z.url(),
-    order: z.number().int().default(0),
+    url: z.url().refine((value) => value.startsWith('https://'), 'url must use https'),
+    order: z.number().int(),
     draft: z.boolean().default(false),
   }),
 });

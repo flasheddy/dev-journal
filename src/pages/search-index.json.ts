@@ -1,14 +1,6 @@
 import type { APIRoute } from 'astro';
+import type { SearchIndexItem } from '../lib/contracts';
 import { getPosts, getProjects, isoDate, postPath, postTags } from '../lib/posts';
-
-export interface SearchIndexItem {
-  kind: 'article' | 'project';
-  title: string;
-  summary: string;
-  url: string;
-  tags: string[];
-  date?: string;
-}
 
 export const GET: APIRoute = async () => {
   const [posts, projects] = await Promise.all([getPosts(), getProjects()]);

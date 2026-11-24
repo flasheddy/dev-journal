@@ -2,6 +2,7 @@ export const site = {
   title: 'Dev Journal',
   description:
     'Notes about extraction infrastructure, adversarial data pipelines, and local-first software with Rust and Python',
+  author: 'Chen',
   url: 'https://hech.dev',
   githubUrl: 'https://github.com/flasheddy',
   email: 'chen@hech.dev',

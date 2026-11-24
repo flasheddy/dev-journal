@@ -6,12 +6,17 @@ import '../styles/site.css';
 interface Props {
   title?: string;
   description?: string;
+  type?: 'website' | 'article';
+  jsonLd?: Record<string, unknown>;
 }
 
-const { title, description = site.description } = Astro.props;
+const { title, description = site.description, type = 'website', jsonLd } = Astro.props;
 const pageTitle = title ? `${title} · ${site.title}` : site.title;
 const pathname = Astro.url.pathname;
-const canonical = new URL(pathname, Astro.site ?? site.url).href;
+const baseUrl = Astro.site ?? new URL(site.url);
+const canonical = new URL(pathname, baseUrl).href;
+const feedUrl = new URL('/rss.xml', baseUrl).href;
+const jsonLdMarkup = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
 const isNavActive = (href: string) =>
   href === '/blog/' && (pathname.startsWith('/blog/') || pathname.startsWith('/tags/'));
 ---
@@ -25,6 +30,17 @@ const isNavActive = (href: string) =>
     <meta name="theme-color" content="#1e1e2e" />
     <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title={`${site.title} RSS`} href={feedUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={site.title} />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    {jsonLdMarkup && <script is:inline type="application/ld+json" set:html={jsonLdMarkup} />}
     <title>{pageTitle}</title>
     <script is:inline>
       (function () {
@@ -171,7 +187,10 @@ const isNavActive = (href: string) =>
     <footer class="site-footer" transition:name="site-footer" transition:animate="none">
       <div class="shell site-footer__inner">
         <p>Dev Journal</p>
-        <p>Built with Astro.</p>
+        <p>
+          Built with Astro. <span aria-hidden="true">·</span>
+          <a class="site-footer__rss" href="/rss.xml">RSS</a>
+        </p>
       </div>
     </footer>
     <div

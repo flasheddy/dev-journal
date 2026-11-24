@@ -12,6 +12,7 @@ import {
   readingTime,
   type BlogPost,
 } from '../../lib/posts';
+import { site } from '../../lib/site';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -37,9 +38,34 @@ const { Content, headings } = await render(post);
 const tags = postTags(post);
 const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 const showToc = tocHeadings.length >= 3;
+const canonical = new URL(postPath(post), Astro.site ?? site.url).href;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.date.toISOString(),
+  dateModified: (post.data.updated ?? post.data.date).toISOString(),
+  author: {
+    '@type': 'Person',
+    name: site.author,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: site.title,
+    url: site.url,
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonical,
+  },
+  url: canonical,
+  keywords: tags.join(', '),
+  inLanguage: 'en',
+};
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description}>
+<BaseLayout title={post.data.title} description={post.data.description} type="article" jsonLd={jsonLd}>
   <div class="reading-progress" data-reading-progress aria-hidden="true">
     <div class="reading-progress__bar" data-reading-progress-bar></div>
   </div>

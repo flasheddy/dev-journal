@@ -1617,6 +1617,18 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
   margin: 0;
 }
 
+.site-footer__rss {
+  color: var(--subtext);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.site-footer__rss:hover,
+.site-footer__rss:focus-visible {
+  color: var(--text);
+  border-bottom-color: currentColor;
+}
+
 /* Smooth Astro ClientRouter view transitions */
 @keyframes page-fade-out {
   from {

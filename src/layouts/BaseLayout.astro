@@ -96,6 +96,33 @@ const isNavActive = (href: string) =>
             <kbd class="search-trigger__kbd" data-search-kbd>⌘K</kbd>
           </button>
           <button
+            class="ask-trigger"
+            type="button"
+            data-ask-trigger
+            aria-label="Ask Journal"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="ask-journal-modal"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"
+              ></path>
+              <path d="M19 16l.8 1.9L21.7 18.7l-1.9.8L19 21.4l-.8-1.9-1.9-.8 1.9-.8L19 16z"></path>
+            </svg>
+            <span class="ask-trigger__label">Ask</span>
+          </button>
+          <button
             class="icon-button theme-toggle"
             type="button"
             data-theme-toggle
@@ -220,6 +247,121 @@ const isNavActive = (href: string) =>
         <div class="command-palette__footer" aria-hidden="true">
           <span class="command-palette__hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
           <span class="command-palette__hint"><kbd>↵</kbd> Open</span>
+          <span class="command-palette__hint"><kbd>Esc</kbd> Close</span>
+        </div>
+      </div>
+    </div>
+    <div
+      id="ask-journal-modal"
+      class="ask-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ask-journal-title"
+      data-ask-modal
+      hidden
+    >
+      <div class="ask-modal__backdrop" data-ask-backdrop></div>
+      <div class="ask-modal__panel" role="document">
+        <div class="ask-modal__header">
+          <div class="ask-modal__heading">
+            <svg
+              class="ask-modal__icon"
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"
+              ></path>
+              <path d="M19 16l.8 1.9L21.7 18.7l-1.9.8L19 21.4l-.8-1.9-1.9-.8 1.9-.8L19 16z"></path>
+            </svg>
+            <h2 id="ask-journal-title" class="ask-modal__title">Ask Journal</h2>
+          </div>
+          <button
+            type="button"
+            class="command-palette__esc"
+            data-ask-close
+            aria-label="Close Ask Journal"
+          >
+            Esc
+          </button>
+        </div>
+
+        <form class="ask-modal__form" data-ask-form>
+          <label class="sr-only" for="ask-journal-input">
+            Ask a question about articles and projects
+          </label>
+          <input
+            id="ask-journal-input"
+            class="ask-modal__input"
+            type="text"
+            placeholder="Ask about dotfiles, commit gates, Astro, or projects…"
+            autocomplete="off"
+            spellcheck="false"
+            data-ask-input
+          />
+          <button type="submit" class="ask-modal__submit" data-ask-submit>Ask</button>
+        </form>
+
+        <div class="ask-modal__body">
+          <div class="ask-modal__prompts" data-ask-prompts>
+            <p class="ask-modal__section-label">Try asking</p>
+            <div class="ask-modal__prompt-list">
+              <button
+                type="button"
+                class="ask-modal__prompt"
+                data-ask-suggestion="How does the dotfiles threat model guard AI agents?"
+              >
+                How does the dotfiles threat model guard AI agents?
+              </button>
+              <button
+                type="button"
+                class="ask-modal__prompt"
+                data-ask-suggestion="Why keep language toolchains out of the package manager?"
+              >
+                Why keep language toolchains out of the package manager?
+              </button>
+              <button
+                type="button"
+                class="ask-modal__prompt"
+                data-ask-suggestion="How does offline visual verification work with Bun and Playwright?"
+              >
+                How does offline visual verification work with Bun and Playwright?
+              </button>
+            </div>
+          </div>
+
+          <p
+            class="ask-modal__status"
+            data-ask-status
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+          </p>
+
+          <section class="ask-modal__answer" data-ask-answer hidden aria-live="polite">
+            <div class="ask-modal__answer-head">
+              <span class="ask-modal__mode" data-ask-mode></span>
+            </div>
+            <p class="ask-modal__answer-text" data-ask-answer-text></p>
+          </section>
+
+          <section class="ask-modal__citations" data-ask-citations hidden>
+            <p class="ask-modal__section-label">Top citations</p>
+            <ol class="ask-modal__citation-list" data-ask-citation-list></ol>
+          </section>
+        </div>
+
+        <div class="command-palette__footer" aria-hidden="true">
+          <span class="command-palette__hint"><kbd>↵</kbd> Ask</span>
+          <span class="command-palette__hint"><kbd>Tab</kbd> Focus</span>
           <span class="command-palette__hint"><kbd>Esc</kbd> Close</span>
         </div>
       </div>

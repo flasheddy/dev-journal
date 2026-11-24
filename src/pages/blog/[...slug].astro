@@ -65,7 +65,13 @@ const jsonLd = {
 };
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description} type="article" jsonLd={jsonLd}>
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  type="article"
+  ogImage={`/og/${post.id}.png`}
+  jsonLd={jsonLd}
+>
   <div class="reading-progress" data-reading-progress aria-hidden="true">
     <div class="reading-progress__bar" data-reading-progress-bar></div>
   </div>

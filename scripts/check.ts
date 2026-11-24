@@ -351,6 +351,7 @@ function checkSource(): void {
     'tsconfig.json',
     'src/content.config.ts',
     'src/layouts/BaseLayout.astro',
+    'src/pages/og/[...slug].png.ts',
     'src/pages/rss.xml.ts',
     'src/pages/index.astro',
     'src/pages/blog/index.astro',
@@ -394,6 +395,11 @@ function checkSource(): void {
   };
   for (const script of ['dev', 'build', 'check', 'check:built']) {
     if (!pkg.scripts?.[script]) fail(`package.json is missing the "${script}" script`);
+  }
+  for (const dependency of ['satori', '@resvg/resvg-js']) {
+    if (!pkg.dependencies?.[dependency]) {
+      fail(`package.json is missing the "${dependency}" dependency`);
+    }
   }
   for (const tool of ['just', 'fish', 'rg']) {
     if (pkg.scripts?.dev?.includes(tool) || pkg.scripts?.build?.includes(tool)) {
@@ -563,6 +569,38 @@ function expectedCanonical(page: string): string | undefined {
   return new URL(`/${path}`, SITE_URL).href;
 }
 
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+function checkPng(file: string): void {
+  const data = readFileSync(file);
+  if (data.length < 1024) {
+    fail(`${rel(file)}: PNG is empty or truncated (${data.length} bytes)`);
+    return;
+  }
+  if (!data.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    fail(`${rel(file)}: missing PNG signature`);
+    return;
+  }
+
+  const headerLength = data.readUInt32BE(8);
+  const headerType = data.subarray(12, 16).toString('ascii');
+  if (headerLength !== 13 || headerType !== 'IHDR') {
+    fail(`${rel(file)}: missing PNG IHDR chunk`);
+    return;
+  }
+
+  const width = data.readUInt32BE(16);
+  const height = data.readUInt32BE(20);
+  if (width !== 1200 || height !== 630) {
+    fail(`${rel(file)}: expected a 1200x630 PNG, found ${width}x${height}`);
+  }
+
+  const trailerType = data.subarray(data.length - 8, data.length - 4).toString('ascii');
+  if (trailerType !== 'IEND') {
+    fail(`${rel(file)}: PNG is missing its IEND chunk`);
+  }
+}
+
 function checkBuilt(): void {
   if (!existsSync(join(root, 'dist'))) {
     console.error('FAIL: dist/ is missing; run "bun run build" first');
@@ -589,6 +627,7 @@ function checkBuilt(): void {
   }
 
   const rssPath = join(root, 'dist/rss.xml');
+  const published = posts.filter((post) => !post.draft);
   if (!existsSync(rssPath)) {
     fail('built RSS feed is missing: dist/rss.xml');
   } else {
@@ -600,7 +639,6 @@ function checkBuilt(): void {
       fail('dist/rss.xml: missing or invalid RFC-822 lastBuildDate');
     }
 
-    const published = posts.filter((post) => !post.draft);
     const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1]);
     if (items.length !== published.length) {
       fail(`dist/rss.xml: expected ${published.length} items, found ${items.length}`);
@@ -633,6 +671,22 @@ function checkBuilt(): void {
       if (!pubDate || !RFC_822.test(pubDate) || Date.parse(pubDate) !== post.date.valueOf()) {
         fail(`dist/rss.xml: item ${post.slug} has an invalid RFC-822 pubDate`);
       }
+    }
+  }
+
+  const defaultOgPath = join(root, 'dist/og/default.png');
+  if (!existsSync(defaultOgPath)) {
+    fail('built OG image is missing: dist/og/default.png');
+  } else {
+    checkPng(defaultOgPath);
+  }
+
+  for (const post of published) {
+    const ogPath = join(root, 'dist/og', `${post.slug}.png`);
+    if (!existsSync(ogPath)) {
+      fail(`built OG image is missing: dist/og/${post.slug}.png`);
+    } else {
+      checkPng(ogPath);
     }
   }
 
@@ -676,6 +730,29 @@ function checkBuilt(): void {
 
     const twitterCard = html.match(/<meta name="twitter:card" content="([^"]*)"/);
     if (!twitterCard || !twitterCard[1].trim()) fail(`${page}: missing twitter:card`);
+    if (twitterCard?.[1] !== 'summary_large_image') {
+      fail(`${page}: twitter:card should be summary_large_image`);
+    }
+
+    const postSlug = page.match(/^blog\/(.+)\/index\.html$/)?.[1];
+    const expectedOgImage = new URL(postSlug ? `/og/${postSlug}.png` : '/og/default.png', SITE_URL)
+      .href;
+    const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/);
+    if (ogImage?.[1] !== expectedOgImage) {
+      fail(`${page}: og:image should be ${expectedOgImage}`);
+    }
+    const ogImageWidth = html.match(/<meta property="og:image:width" content="([^"]+)"/);
+    if (ogImageWidth?.[1] !== '1200') {
+      fail(`${page}: og:image:width should be 1200`);
+    }
+    const ogImageHeight = html.match(/<meta property="og:image:height" content="([^"]+)"/);
+    if (ogImageHeight?.[1] !== '630') {
+      fail(`${page}: og:image:height should be 630`);
+    }
+    const twitterImage = html.match(/<meta name="twitter:image" content="([^"]+)"/);
+    if (twitterImage?.[1] !== expectedOgImage) {
+      fail(`${page}: twitter:image should be ${expectedOgImage}`);
+    }
 
     if (
       !/<link rel="alternate" type="application\/rss\+xml"[^>]*href="https:\/\/hech\.dev\/rss\.xml"/.test(

@@ -7,5 +7,4 @@ disable = ["MD013"]
 list-items = false
 
 [MD060]
-enabled = true
 style = "compact"

@@ -77,6 +77,39 @@ describe('stripMarkdownToPlainText', () => {
       'Before\n\nconst total = 1 + 1;\n## still code\n\nAfter',
     );
   });
+
+  test('strips supported callout markers from quoted prose', () => {
+    const markdown = [
+      '> [!NOTE]',
+      '> Note body.',
+      '',
+      '> [!TIP] Tip body.',
+      '',
+      '> [!WARNING]',
+      '> Warning body.',
+      '',
+      '> [!DANGER] Danger body.',
+    ].join('\n');
+
+    expect(stripMarkdownToPlainText(markdown)).toBe(
+      'Note body.\n\nTip body.\n\nWarning body.\n\nDanger body.',
+    );
+  });
+
+  test('keeps regular blockquotes and unsupported markers in quoted prose', () => {
+    const markdown = [
+      '> A normal quote.',
+      '',
+      '> [!IMPORTANT]',
+      '> Important body.',
+      '',
+      '> [!note] Lowercase body.',
+    ].join('\n');
+
+    expect(stripMarkdownToPlainText(markdown)).toBe(
+      'A normal quote.\n\n[!IMPORTANT]\nImportant body.\n\n[!note] Lowercase body.',
+    );
+  });
 });
 
 describe('normalizeInlineSpace', () => {

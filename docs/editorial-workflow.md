@@ -88,6 +88,24 @@ date, description, and a tags array, and validates every build.
 Project cards live in `src/content/projects/` and use `title`, `description`,
 `tech`, `url`, and `order`. The homepage renders them in ascending `order`.
 
+### Prose enhancements
+
+Markdown supports four GitHub-style callout markers at the start of a
+blockquote: `[!NOTE]`, `[!TIP]`, `[!WARNING]`, and `[!DANGER]`. Supported
+markers render with a Catppuccin accent, an accessible title, and an inline
+icon. Lowercase, unsupported, or mid-block markers remain ordinary
+blockquotes.
+
+```markdown
+> [!WARNING]
+> Back up the archive before running a destructive migration.
+```
+
+Use HTML `kbd` elements for keyboard shortcuts rather than bold or inline
+code. Standard pipe tables render with a focusable horizontal scroll wrapper
+on narrow viewports; keep header labels short and put long detail in body
+cells.
+
 ## Review and approval gates
 
 Before calling an article `locally validated`, a reviewer checks:

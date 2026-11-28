@@ -1,3 +1,5 @@
+import { stripCalloutMarker } from './callouts';
+
 export const MAX_CHUNK_CHARS = 700;
 
 export type RenderedHeading = {
@@ -50,6 +52,14 @@ export function stripMarkdownToPlainText(markdown: string): string {
       .replace(/^\s{0,3}#{1,6}\s+/, '')
       .replace(/^\s*(?:>\s*)+/, '')
       .replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '');
+
+    // GitHub-style callout markers are presentation, not prose. Drop a
+    // marker-only line entirely and keep any content on the same line.
+    const withoutCallout = stripCalloutMarker(line);
+    if (withoutCallout !== line) {
+      line = withoutCallout;
+      if (!line.trim()) continue;
+    }
 
     // Convert table rows to readable text
     if (line.includes('|') && /^\s*\|/.test(line)) {

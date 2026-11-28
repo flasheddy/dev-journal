@@ -13,6 +13,10 @@
   --accent-hover: #b4befe;
   --accent-soft: rgb(203 166 247 / 12%);
   --accent-border: rgb(203 166 247 / 44%);
+  --sapphire: #74c7ec;
+  --green: #a6e3a1;
+  --yellow: #f9e2af;
+  --red: #f38ba8;
   --row-hover: rgb(49 50 68 / 42%);
   --pill-bg: rgb(49 50 68 / 72%);
   --pill-border: rgb(88 91 112 / 60%);
@@ -47,6 +51,10 @@ html[data-theme='latte'] {
   --accent-hover: #6c2bd9;
   --accent-soft: rgb(136 57 239 / 10%);
   --accent-border: rgb(136 57 239 / 40%);
+  --sapphire: #209fb5;
+  --green: #40a02b;
+  --yellow: #df8e1d;
+  --red: #d20f39;
   --row-hover: rgb(204 208 218 / 38%);
   --pill-bg: rgb(220 224 232 / 82%);
   --pill-border: rgb(172 176 190 / 75%);
@@ -1356,14 +1364,102 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
 }
 
 .prose blockquote {
-  padding: 0.55rem 0 0.55rem 1.35rem;
-  border-left: 3px solid var(--accent);
+  margin-block: 1.6rem;
+  padding: 0.4rem 0 0.4rem 1.15rem;
+  border-left: 2px solid var(--accent-border);
   color: var(--subtext);
-  font-size: 1.06rem;
+  font-size: 1.04rem;
+  line-height: 1.72;
 }
 
 .prose blockquote p {
   margin: 0;
+}
+
+.prose blockquote p + p {
+  margin-top: 0.8rem;
+}
+
+.prose blockquote blockquote {
+  margin-block: 0.9rem;
+  border-left-color: var(--surface-1);
+}
+
+.prose kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0.12em 0.38em;
+  border: 1px solid var(--surface-1);
+  border-bottom-color: var(--surface-2);
+  border-radius: 5px;
+  background: var(--mantle);
+  box-shadow: 0 1.5px 0 var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+  vertical-align: 0.08em;
+  white-space: nowrap;
+}
+
+.prose .callout {
+  --callout-accent: var(--accent);
+  margin-block: 1.7rem;
+  padding: 0.85rem 1.05rem 0.9rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--callout-accent) 26%, transparent);
+  border-left: 3px solid var(--callout-accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: color-mix(in srgb, var(--callout-accent) 9%, transparent);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.72;
+}
+
+.prose .callout--note {
+  --callout-accent: var(--sapphire);
+}
+
+.prose .callout--tip {
+  --callout-accent: var(--green);
+}
+
+.prose .callout--warning {
+  --callout-accent: var(--yellow);
+}
+
+.prose .callout--danger {
+  --callout-accent: var(--red);
+}
+
+.prose .callout__title {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin: 0 0 0.35rem;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.prose .callout__icon {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: var(--callout-accent);
+}
+
+.prose .callout__body > :first-child {
+  margin-top: 0;
+}
+
+.prose .callout__body > :last-child {
+  margin-bottom: 0;
 }
 
 .prose code:not(pre code) {
@@ -1481,10 +1577,26 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
   white-space: nowrap;
 }
 
+.prose .table-wrapper {
+  margin-block: 1.5rem;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--base);
+  scrollbar-color: var(--surface-1) transparent;
+}
+
+.prose .table-wrapper:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .prose table {
   display: block;
   width: max-content;
   max-width: 100%;
+  margin-block: 1.5rem;
   overflow-x: auto;
   border-spacing: 0;
   border-collapse: separate;
@@ -1493,10 +1605,21 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
   font-variant-numeric: tabular-nums;
 }
 
+.prose .table-wrapper table {
+  display: table;
+  width: 100%;
+  min-width: max-content;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+
 .prose th,
 .prose td {
-  min-width: 9rem;
-  padding: 0.72rem 0.9rem;
+  min-width: 8.5rem;
+  padding: 0.68rem 0.85rem;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   text-align: left;
@@ -1505,7 +1628,25 @@ html[data-theme='latte'] .theme-toggle [data-theme-icon='moon'] {
 
 .prose th {
   background: var(--crust);
-  font-size: 0.82rem;
+  color: var(--subtext);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.prose td {
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.prose tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--mantle) 55%, transparent);
+}
+
+.prose tbody tr:hover {
+  background: var(--row-hover);
 }
 
 .prose tr:last-child td {

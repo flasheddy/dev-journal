@@ -1,9 +1,10 @@
-export type TaggedPost = { data: { tags: string[] } };
-export type TagEntry<T extends TaggedPost = TaggedPost> = {
+export type TagEntry<T> = {
   name: string;
   slug: string;
   posts: T[];
 };
+
+export type TagIndexReporter<T> = (message: string, post: T) => void;
 
 export function slugifyTag(tag: string): string {
   return tag
@@ -24,21 +25,29 @@ export function tagPath(tag: string): string {
   return `/tags/${slug}/`;
 }
 
-export function indexTags<T extends TaggedPost>(posts: readonly T[]): TagEntry<T>[] {
+export function indexTags<T>(
+  posts: readonly T[],
+  tagsOf: (post: T) => readonly string[],
+  fail: TagIndexReporter<T> = (message) => {
+    throw new Error(message);
+  },
+): TagEntry<T>[] {
   const tags = new Map<string, TagEntry<T>>();
 
   for (const post of posts) {
-    for (const name of post.data.tags) {
+    for (const name of tagsOf(post)) {
       const slug = slugifyTag(name);
 
       if (!slug) {
-        throw new Error(`Tag cannot be converted to a URL slug: ${JSON.stringify(name)}`);
+        fail(`Tag cannot be converted to a URL slug: ${JSON.stringify(name)}`, post);
+        continue;
       }
 
       const existing = tags.get(slug);
       if (existing && existing.name !== name) {
-        throw new Error(
+        fail(
           `Tag slug collision: ${JSON.stringify(existing.name)} and ${JSON.stringify(name)} both map to /tags/${slug}/`,
+          post,
         );
       }
 

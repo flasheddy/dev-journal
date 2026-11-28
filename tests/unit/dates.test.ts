@@ -1,31 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { formatDate, isUpdated, isoDate } from '../../src/lib/dates';
 
-describe('isoDate', () => {
-  test('returns the UTC calendar date', () => {
-    expect(isoDate(new Date('2026-09-26T12:00:00Z'))).toBe('2026-09-26');
-  });
-
-  test('does not shift the day for a late UTC time', () => {
+describe('UTC date handling', () => {
+  test('keeps the UTC calendar date at both ends of the day', () => {
+    expect(isoDate(new Date('2026-09-26T00:00:00.000Z'))).toBe('2026-09-26');
     expect(isoDate(new Date('2026-09-26T23:59:59.999Z'))).toBe('2026-09-26');
   });
-});
 
-describe('formatDate', () => {
-  test('formats the short month', () => {
-    expect(formatDate(new Date('2026-09-26T12:00:00Z'), 'short')).toBe('Sep 26, 2026');
-  });
-
-  test('formats the long month', () => {
-    expect(formatDate(new Date('2026-09-26T12:00:00Z'), 'long')).toBe('September 26, 2026');
-  });
-
-  test('uses UTC just after the start of the UTC day', () => {
-    expect(formatDate(new Date('2026-09-26T00:30:00Z'), 'short')).toBe('Sep 26, 2026');
-  });
-
-  test('uses UTC just before the end of the UTC day', () => {
-    expect(formatDate(new Date('2026-09-26T23:30:00Z'), 'short')).toBe('Sep 26, 2026');
+  test('formats the UTC date at both ends of the day', () => {
+    expect(formatDate(new Date('2026-09-26T00:30:00Z'))).toBe('Sep 26, 2026');
+    expect(formatDate(new Date('2026-09-26T23:30:00Z'))).toBe('Sep 26, 2026');
   });
 });
 

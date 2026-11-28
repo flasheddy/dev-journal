@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { validateAiCorpus, validateSearchIndex, type ExpectedSearchItem } from './artifacts';
-import { buildTagIndex, loadPosts, loadProjects, type Reporter } from './content';
+import { buildTagMap, loadPosts, loadProjects, type Reporter } from './content';
 import { readText, rel, walk } from './files';
 import { isRecord } from './util';
 
@@ -171,7 +171,7 @@ export function checkBuilt(root: string, fail: Reporter): { pages: number } {
       url: project.url,
     })),
   ];
-  const tags = buildTagIndex(published, fail);
+  const tags = buildTagMap(published, fail);
   const requiredPages = [
     'index.html',
     '404.html',

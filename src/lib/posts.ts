@@ -33,5 +33,5 @@ export function postTags(post: BlogPost): string[] {
 }
 
 export async function getTagIndex(): Promise<TagEntry[]> {
-  return indexTags(await getPosts());
+  return indexTags(await getPosts(), (post) => post.data.tags);
 }

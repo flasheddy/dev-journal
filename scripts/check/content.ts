@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { parse as parseToml } from 'smol-toml';
-import { slugifyTag } from '../../src/lib/tags';
+import { indexTags } from '../../src/lib/tags';
 import { isRecord, type RecordValue } from './util';
 
 export type { RecordValue } from './util';
@@ -188,26 +188,14 @@ export function loadProjects(
   return projects.sort((a, b) => a.order - b.order);
 }
 
-export function buildTagIndex(posts: readonly BlogRecord[], fail: Reporter): Map<string, string> {
-  const tags = new Map<string, string>();
-
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      const slug = slugifyTag(tag);
-      if (!slug) {
-        fail(`${post.file}: tag cannot be converted to a URL slug: ${JSON.stringify(tag)}`);
-        continue;
-      }
-
-      const existing = tags.get(slug);
-      if (existing && existing !== tag) {
-        fail(
-          `tag slug collision: ${JSON.stringify(existing)} and ${JSON.stringify(tag)} both map to /tags/${slug}/`,
-        );
-      }
-      tags.set(slug, tag);
-    }
-  }
-
-  return tags;
+export function buildTagMap(posts: readonly BlogRecord[], fail: Reporter): Map<string, string> {
+  return new Map(
+    indexTags(
+      posts,
+      (post) => post.tags,
+      (message, post) => {
+        fail(`${post.file}: ${message}`);
+      },
+    ).map(({ slug, name }) => [slug, name] as const),
+  );
 }

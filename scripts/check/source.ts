@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
-import { buildTagIndex, loadPosts, loadProjects, type Reporter } from './content';
+import { buildTagMap, loadPosts, loadProjects, type Reporter } from './content';
 import { assertContains, assertFile, readText, rel, walk } from './files';
 import { checkSecrets } from './secrets';
 import { checkTrackedArtifacts } from './tracked';
@@ -97,7 +97,7 @@ export function checkSource(root: string, fail: Reporter): { posts: number; tags
     fail,
     (path) => rel(root, path),
   );
-  const tags = buildTagIndex(posts, fail);
+  const tags = buildTagMap(posts, fail);
 
   const pinned = posts.find((post) => post.slug === 'offline-visual-verification');
   if (!pinned) {

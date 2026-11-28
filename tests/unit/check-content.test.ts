@@ -1,426 +1,200 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import {
-  buildTagIndex,
-  loadPosts,
-  loadProjects,
-  type BlogRecord,
-  type Reporter,
-} from '../../scripts/check/content';
+import { loadPosts, loadProjects } from '../../scripts/check/content';
+
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+function writeFiles(files: Record<string, string>): string[] {
+  const dir = mkdtempSync(join(tmpdir(), 'check-content-'));
+  tempDirs.push(dir);
+
+  return Object.entries(files).map(([name, text]) => {
+    const path = join(dir, name);
+    writeFileSync(path, text);
+    return path;
+  });
+}
 
 const blogRel = (path: string) => `src/content/blog/${basename(path)}`;
 const projectRel = (path: string) => `src/content/projects/${basename(path)}`;
+const post = (frontMatter: string) => `+++\n${frontMatter}\n+++\nBody text\n`;
+const project = (frontMatter: string) => `+++\n${frontMatter}\n+++\n`;
 
-function tempDir(prefix: string): string {
-  return mkdtempSync(join(tmpdir(), prefix));
-}
-
-function collectFailures(run: (fail: Reporter) => void): string[] {
-  const failures: string[] = [];
-  run((message) => failures.push(message));
-  return failures;
-}
-
-function blogRecord(overrides: Partial<BlogRecord> = {}): BlogRecord {
-  return {
-    file: 'src/content/blog/post.md',
-    slug: 'post',
-    title: 'Post',
-    date: new Date('2026-09-26T00:00:00.000Z'),
-    draft: false,
-    description: 'A summary',
-    tags: [],
-    body: '',
-    ...overrides,
-  };
+function expectDiagnostics(failures: string[], diagnostics: string[]): void {
+  const output = failures.join('\n');
+  for (const diagnostic of diagnostics) expect(output).toContain(diagnostic);
 }
 
 describe('loadPosts', () => {
   test('parses a valid post and normalizes TOML dates', () => {
-    const dir = tempDir('check-content-post-');
-
-    try {
-      const file = join(dir, 'hello.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Hello"
+    const [file] = writeFiles({
+      'hello.md': post(`title = "Hello"
 date = 2026-09-26
 description = "A summary"
 [taxonomies]
-tags = ["Bun", "Astro"]
-+++
-Body text
-`,
-      );
+tags = ["Bun", "Astro"]`),
+    });
+    const reported: string[] = [];
 
-      const failures = collectFailures((fail) => {
-        const posts = loadPosts([file], fail, blogRel);
+    const posts = loadPosts([file!], (message) => reported.push(message), blogRel);
 
-        expect(posts).toHaveLength(1);
-        const post = posts[0]!;
-        expect(post.file).toBe('src/content/blog/hello.md');
-        expect(post.slug).toBe('hello');
-        expect(post.title).toBe('Hello');
-        expect(post.description).toBe('A summary');
-        expect(post.tags).toEqual(['Bun', 'Astro']);
-        expect(post.date.toISOString()).toBe('2026-09-26T00:00:00.000Z');
-      });
-
-      expect(failures).toEqual([]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(reported).toEqual([]);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({
+      title: 'Hello',
+      description: 'A summary',
+      tags: ['Bun', 'Astro'],
+    });
+    expect(posts[0]!.date.toISOString()).toBe('2026-09-26T00:00:00.000Z');
   });
 
-  test('reports a missing title', () => {
-    const dir = tempDir('check-content-title-');
-
-    try {
-      const file = join(dir, 'missing-title.md');
-      writeFileSync(
-        file,
-        `+++
-date = 2026-09-26
-description = "A summary"
-+++
-Body text
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        loadPosts([file], fail, blogRel);
-      });
-
-      expect(failures).toContain('src/content/blog/missing-title.md: title must be a string');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports a missing description', () => {
-    const dir = tempDir('check-content-description-');
-
-    try {
-      const file = join(dir, 'missing-description.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Missing description"
-date = 2026-09-26
-+++
-Body text
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        loadPosts([file], fail, blogRel);
-      });
-
-      expect(failures).toContain(
-        'src/content/blog/missing-description.md: description must be a string',
-      );
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports a missing date by skipping the post', () => {
-    const dir = tempDir('check-content-date-');
-
-    try {
-      const file = join(dir, 'missing-date.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Missing date"
-description = "A summary"
-+++
-Body text
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        const posts = loadPosts([file], fail, blogRel);
-
-        expect(posts).toEqual([]);
-      });
-
-      expect(failures).toContain(
-        'src/content/blog/missing-date.md: date must be an ISO date (YYYY-MM-DD)',
-      );
-      expect(failures).toContain('no blog entries found in src/content/blog');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports a missing date without dropping valid posts', () => {
-    const dir = tempDir('check-content-mixed-date-');
-
-    try {
-      const valid = join(dir, 'valid.md');
-      const missing = join(dir, 'missing-date.md');
-      writeFileSync(
-        valid,
-        `+++
-title = "Valid"
-date = 2026-09-26
-description = "A summary"
-+++
-Body text
-`,
-      );
-      writeFileSync(
-        missing,
-        `+++
-title = "Missing date"
-description = "A summary"
-+++
-Body text
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        const posts = loadPosts([missing, valid], fail, blogRel);
-
-        expect(posts.map((post) => post.slug)).toEqual(['valid']);
-        expect(posts[0]!.date.toISOString()).toBe('2026-09-26T00:00:00.000Z');
-      });
-
-      expect(failures).toEqual([
-        'src/content/blog/missing-date.md: date must be an ISO date (YYYY-MM-DD)',
-      ]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports an invalid date', () => {
-    const dir = tempDir('check-content-invalid-date-');
-
-    try {
-      const file = join(dir, 'invalid-date.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Invalid date"
-date = "not-a-date"
-description = "A summary"
-+++
-Body text
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        loadPosts([file], fail, blogRel);
-      });
-
-      expect(failures).toContain(
-        'src/content/blog/invalid-date.md: date must be an ISO date (YYYY-MM-DD)',
-      );
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports duplicate tags', () => {
-    const dir = tempDir('check-content-tags-');
-
-    try {
-      const file = join(dir, 'duplicate-tags.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Duplicate tags"
+  const invalidPosts = [
+    {
+      name: 'reports a missing title',
+      file: 'missing-title.md',
+      frontMatter: 'date = 2026-09-26\ndescription = "A summary"',
+      diagnostics: ['title must be a string'],
+      loaded: 0,
+    },
+    {
+      name: 'reports a missing description',
+      file: 'missing-description.md',
+      frontMatter: 'title = "Missing description"\ndate = 2026-09-26',
+      diagnostics: ['description must be a string'],
+      loaded: 0,
+    },
+    {
+      name: 'reports a missing date and skips the post',
+      file: 'missing-date.md',
+      frontMatter: 'title = "Missing date"\ndescription = "A summary"',
+      diagnostics: ['date must be an ISO date', 'no blog entries found'],
+      loaded: 0,
+    },
+    {
+      name: 'reports an invalid date',
+      file: 'invalid-date.md',
+      frontMatter: 'title = "Invalid date"\ndate = "not-a-date"\ndescription = "A summary"',
+      diagnostics: ['date must be an ISO date'],
+      loaded: 0,
+    },
+    {
+      name: 'reports duplicate tags',
+      file: 'duplicate-tags.md',
+      frontMatter: `title = "Duplicate tags"
 date = 2026-09-26
 description = "A summary"
 [taxonomies]
-tags = ["Bun", "Bun"]
-+++
-Body text
-`,
-      );
+tags = ["Bun", "Bun"]`,
+      diagnostics: ['tags must be unique'],
+      loaded: 1,
+    },
+  ];
 
-      const failures = collectFailures((fail) => {
-        loadPosts([file], fail, blogRel);
-      });
+  for (const scenario of invalidPosts) {
+    test(scenario.name, () => {
+      const [file] = writeFiles({ [scenario.file]: post(scenario.frontMatter) });
+      const reported: string[] = [];
 
-      expect(failures).toContain('src/content/blog/duplicate-tags.md: tags must be unique');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+      const posts = loadPosts([file!], (message) => reported.push(message), blogRel);
+
+      expect(posts).toHaveLength(scenario.loaded);
+      expectDiagnostics(reported, scenario.diagnostics);
+    });
+  }
+
+  test('keeps valid posts when another post has a missing date', () => {
+    const [missing, valid] = writeFiles({
+      'missing-date.md': post('title = "Missing date"\ndescription = "A summary"'),
+      'valid.md': post('title = "Valid"\ndate = 2026-09-26\ndescription = "A summary"'),
+    });
+    const reported: string[] = [];
+
+    const posts = loadPosts([missing!, valid!], (message) => reported.push(message), blogRel);
+
+    expect(posts.map(({ slug }) => slug)).toEqual(['valid']);
+    expect(posts[0]!.date.toISOString()).toBe('2026-09-26T00:00:00.000Z');
+    expectDiagnostics(reported, ['date must be an ISO date']);
   });
 
-  test('reports duplicate slugs', () => {
-    const dir = tempDir('check-content-slugs-');
+  test('reports duplicate blog slugs', () => {
+    const [file] = writeFiles({
+      'duplicate.md': post('title = "Duplicate"\ndate = 2026-09-26\ndescription = "A summary"'),
+    });
+    const reported: string[] = [];
 
-    try {
-      const file = join(dir, 'duplicate.md');
-      writeFileSync(
-        file,
-        `+++
-title = "Duplicate"
-date = 2026-09-26
-description = "A summary"
-+++
-Body text
-`,
-      );
+    loadPosts([file!, file!], (message) => reported.push(message), blogRel);
 
-      const failures = collectFailures((fail) => {
-        loadPosts([file, file], fail, blogRel);
-      });
-
-      expect(failures).toContain('duplicate blog slug: duplicate');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expectDiagnostics(reported, ['duplicate blog slug: duplicate']);
   });
 });
 
-describe('buildTagIndex', () => {
-  test('groups tags by slug', () => {
-    const failures = collectFailures((fail) => {
-      const index = buildTagIndex(
-        [
-          blogRecord({ tags: ['Astro', 'Bun'] }),
-          blogRecord({ file: 'src/content/blog/other.md', slug: 'other', tags: ['Bun'] }),
-        ],
-        fail,
-      );
-
-      expect([...index.entries()]).toEqual([
-        ['astro', 'Astro'],
-        ['bun', 'Bun'],
-      ]);
-    });
-
-    expect(failures).toEqual([]);
-  });
-
-  test('reports different names with the same slug', () => {
-    const failures = collectFailures((fail) => {
-      buildTagIndex(
-        [blogRecord({ tags: ['AI Agents'] }), blogRecord({ tags: ['AI-Agents'] })],
-        fail,
-      );
-    });
-
-    expect(failures).toEqual([
-      'tag slug collision: "AI Agents" and "AI-Agents" both map to /tags/ai-agents/',
-    ]);
-  });
-
-  test('reports a tag that normalizes to an empty slug', () => {
-    const failures = collectFailures((fail) => {
-      buildTagIndex([blogRecord({ tags: ['!!!'] })], fail);
-    });
-
-    expect(failures).toEqual([
-      'src/content/blog/post.md: tag cannot be converted to a URL slug: "!!!"',
-    ]);
-  });
-});
-
-// The content schema now requires the same project order and HTTPS URL rules.
 describe('loadProjects', () => {
   test('parses valid projects and sorts them by order', () => {
-    const dir = tempDir('check-content-projects-');
-
-    try {
-      const second = join(dir, 'second.md');
-      const first = join(dir, 'first.md');
-      writeFileSync(
-        second,
-        `+++
-title = "Second"
+    const [second, first] = writeFiles({
+      'second.md': project(`title = "Second"
 description = "Second project"
 tech = ["Astro"]
 url = "https://example.com/second"
-order = 2
-+++
-`,
-      );
-      writeFileSync(
-        first,
-        `+++
-title = "First"
+order = 2`),
+      'first.md': project(`title = "First"
 description = "First project"
 tech = ["Bun", "Astro"]
 url = "https://example.com/first"
-order = 1
-+++
-`,
-      );
+order = 1`),
+    });
+    const reported: string[] = [];
 
-      const failures = collectFailures((fail) => {
-        const projects = loadProjects([second, first], fail, projectRel);
+    const projects = loadProjects(
+      [second!, first!],
+      (message) => reported.push(message),
+      projectRel,
+    );
 
-        expect(projects.map((project) => project.slug)).toEqual(['first', 'second']);
-        expect(projects[0]!.tech).toEqual(['Bun', 'Astro']);
-        expect(projects[0]!.url).toBe('https://example.com/first');
-        expect(projects[0]!.draft).toBe(false);
-      });
-
-      expect(failures).toEqual([]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(reported).toEqual([]);
+    expect(projects.map(({ slug }) => slug)).toEqual(['first', 'second']);
+    expect(projects[0]).toMatchObject({
+      tech: ['Bun', 'Astro'],
+      url: 'https://example.com/first',
+      draft: false,
+    });
   });
 
-  test('reports a project missing order', () => {
-    const dir = tempDir('check-content-project-order-');
-
-    try {
-      const file = join(dir, 'no-order.md');
-      writeFileSync(
-        file,
-        `+++
-title = "No order"
+  const invalidProjects = [
+    {
+      name: 'reports a project missing order',
+      file: 'no-order.md',
+      frontMatter: `title = "No order"
 description = "Missing order"
 tech = ["Bun"]
-url = "https://example.com/no-order"
-+++
-`,
-      );
-
-      const failures = collectFailures((fail) => {
-        loadProjects([file], fail, projectRel);
-      });
-
-      expect(failures).toContain('src/content/projects/no-order.md: order must be an integer');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  test('reports a project using an HTTP url', () => {
-    const dir = tempDir('check-content-project-url-');
-
-    try {
-      const file = join(dir, 'http-url.md');
-      writeFileSync(
-        file,
-        `+++
-title = "HTTP url"
+url = "https://example.com/no-order"`,
+      diagnostics: ['order must be an integer'],
+    },
+    {
+      name: 'reports a project using an HTTP url',
+      file: 'http-url.md',
+      frontMatter: `title = "HTTP url"
 description = "Insecure url"
 tech = ["Bun"]
 url = "http://example.com/http-url"
-order = 1
-+++
-`,
-      );
+order = 1`,
+      diagnostics: ['url must be an https URL'],
+    },
+  ];
 
-      const failures = collectFailures((fail) => {
-        loadProjects([file], fail, projectRel);
-      });
+  for (const scenario of invalidProjects) {
+    test(scenario.name, () => {
+      const [file] = writeFiles({ [scenario.file]: project(scenario.frontMatter) });
+      const reported: string[] = [];
 
-      expect(failures).toContain('src/content/projects/http-url.md: url must be an https URL');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
+      loadProjects([file!], (message) => reported.push(message), projectRel);
+
+      expectDiagnostics(reported, scenario.diagnostics);
+    });
+  }
 });

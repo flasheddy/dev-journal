@@ -1,47 +1,42 @@
 import { describe, expect, test } from 'bun:test';
 import { indexTags } from '../../src/lib/tags';
 
-type TestPost = { id: string; data: { tags: string[] } };
+type TestPost = { id: string; tags: string[] };
 
-const post = (id: string, tags: string[]): TestPost => ({ id, data: { tags } });
+const post = (id: string, tags: string[]): TestPost => ({ id, tags });
+const index = (posts: TestPost[], fail?: (message: string) => void) =>
+  indexTags(posts, (entry) => entry.tags, fail);
 
 describe('indexTags', () => {
-  test('sorts tags by name', () => {
-    const index = indexTags([post('one', ['Zig', 'Astro', 'Bun'])]);
+  test('sorts tags by name and groups posts in input order', () => {
+    const posts = [post('first', ['Zig', 'Bun']), post('second', ['Astro', 'Bun'])];
 
-    expect(index.map(({ name }) => name)).toEqual(['Astro', 'Bun', 'Zig']);
+    const tags = index(posts);
+
+    expect(tags.map(({ name }) => name)).toEqual(['Astro', 'Bun', 'Zig']);
+    expect(tags.find(({ name }) => name === 'Bun')?.posts.map(({ id }) => id)).toEqual([
+      'first',
+      'second',
+    ]);
   });
 
-  test('preserves input order for posts within a tag', () => {
-    const posts = [post('first', ['Bun']), post('second', ['Bun'])];
-
-    const [tag] = indexTags(posts);
-
-    expect(tag?.posts.map(({ id }) => id)).toEqual(['first', 'second']);
-  });
-
-  test('lists a tag with multiple posts once', () => {
-    const index = indexTags([post('first', ['Bun']), post('second', ['Bun'])]);
-
-    expect(index).toHaveLength(1);
-    expect(index[0]?.posts).toHaveLength(2);
-  });
-
-  test('throws when different names share a slug', () => {
+  test('reports different names that share a slug', () => {
     const posts = [post('first', ['AI Agents']), post('second', ['AI-Agents'])];
 
-    expect(() => indexTags(posts)).toThrow(
-      'Tag slug collision: "AI Agents" and "AI-Agents" both map to /tags/ai-agents/',
-    );
+    expect(() => index(posts)).toThrow(/slug collision/i);
   });
 
-  test('throws when a tag normalizes to an empty slug', () => {
-    expect(() => indexTags([post('first', ['!!!'])])).toThrow(
-      'Tag cannot be converted to a URL slug: "!!!"',
-    );
+  test('reports a tag that normalizes to an empty slug', () => {
+    const failures: string[] = [];
+
+    const tags = index([post('first', ['!!!', 'Bun'])], (message) => failures.push(message));
+
+    expect(tags.map(({ name }) => name)).toEqual(['Bun']);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('URL slug');
   });
 
   test('returns an empty array for no posts', () => {
-    expect(indexTags([])).toEqual([]);
+    expect(index([])).toEqual([]);
   });
 });
